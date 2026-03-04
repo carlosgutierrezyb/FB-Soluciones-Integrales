@@ -1,25 +1,38 @@
 package model;
 
+/**
+ * Representa el catálogo maestro de referencias (Tabla 'inventario' en BD).
+ * Se eliminó 'precioUnitario' porque el costo se calculará en base a las
+ * compras reales (tabla 'entradas_inventario') para tener un costeo real.
+ */
 public class Producto {
+    // Campos originales que mantenemos
     private int id;
     private String nombre;
-    private String descripcion;
+    private String descripcion; // Puede usarse para guardar la 'unidad' (ej. par, caja, unidad)
     private int stockActual;
-    private double precioUnitario;
 
-    // Constructor vacío
+    // NUEVOS CAMPOS (Añadidos en la última actualización de BD)
+    private int idCategoria;
+    private int stockMinimo;
+    private String codigoReferencia;
+
+    // 1. Constructor vacío (Obligatorio para frameworks y consultas a BD)
     public Producto() {
     }
 
-    public Producto(int id, String nombre, String descripcion, int stockActual, double precioUnitario) {
+    // 2. Constructor completo con los nuevos campos
+    public Producto(int id, String nombre, String descripcion, int stockActual, int idCategoria, int stockMinimo) {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = descripcion;
         this.stockActual = stockActual;
-        this.precioUnitario = precioUnitario;
+        this.idCategoria = idCategoria;
+        this.stockMinimo = stockMinimo;
     }
 
-    //Getter
+    // --- GETTERS ---
+
     public int getId() {
         return id;
     }
@@ -36,12 +49,18 @@ public class Producto {
         return stockActual;
     }
 
-    public double getPrecioUnitario() {
-        return precioUnitario;
+    public int getIdCategoria() {
+        return idCategoria;
     }
 
-    //Setter
+    public int getStockMinimo() {
+        return stockMinimo;
+    }
 
+    public String getCodigoReferencia() {
+        return codigoReferencia; }
+
+    // --- SETTERS ---
 
     public void setId(int id) {
         this.id = id;
@@ -59,7 +78,14 @@ public class Producto {
         this.stockActual = stockActual;
     }
 
-    public void setPrecioUnitario(double precioUnitario) {
-        this.precioUnitario = precioUnitario;
+    public void setIdCategoria(int idCategoria) {
+        this.idCategoria = idCategoria;
     }
+
+    public void setStockMinimo(int stockMinimo) {
+        this.stockMinimo = stockMinimo;
+    }
+
+    public void setCodigoReferencia(String codigoReferencia) {
+        this.codigoReferencia = codigoReferencia; }
 }

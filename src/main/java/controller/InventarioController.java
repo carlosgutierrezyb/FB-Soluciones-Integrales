@@ -1,56 +1,103 @@
 package controller;
 
+import model.Categoria;
 import model.Producto;
+import repository.CategoriaRepository;
 import repository.ProductoRepository;
 import java.util.List;
 
-/**
- * Clase mediadora entre la Vista y el Modelo.
- */
-
 public class InventarioController {
-    private ProductoRepository repository;
+
+    private ProductoRepository productoRepo;
+    private CategoriaRepository categoriaRepo;
 
     public InventarioController() {
-        this.repository = new ProductoRepository();
+        this.productoRepo = new ProductoRepository();
+        this.categoriaRepo = new CategoriaRepository();
     }
 
     /**
-     * Lógica para registrar un producto validando datos básicos.
+     * Recibe los datos de la Vista, los valida y los envía al Repositorio.
      */
-    public String registrarProducto(int id, String nombre, int stock, double precio) {
-        if (nombre.isEmpty() || stock < 0) {
-            return "Error: Datos inválidos.";
-        }
+    public String agregarNuevoProducto(String nombre, String stockStr, String idCatStr, String stockMinStr) {
+        try {
+            // 1. Validaciones básicas
+            if (nombre.trim().isEmpty()) return "El nombre de la referencia es obligatorio.";
 
-        Producto p = new Producto(id, nombre, "Sin descripción", stock, precio);
-        repository.guardar(p);
-        return "Producto registrado con éxito.";
+            // 2. Conversión de datos (Parsing)
+            int stock = Integer.parseInt(stockStr);
+            int idCategoria = Integer.parseInt(idCatStr);
+            int stockMinimo = Integer.parseInt(stockMinStr);
+
+            if (stock < 0 || stockMinimo < 0) return "Las cantidades no pueden ser negativas.";
+
+            // 3. GENERAR CÓDIGO SECUENCIAL POR CATEGORÍA
+            String ultimoCodigo = productoRepo.obtenerUltimoCodigoPorCategoria(idCategoria);
+
+            int nuevoCorrelativo = 1;
+
+            if (ultimoCodigo != null) {
+                // Ejemplo formato: 01-0005
+                String[] partes = ultimoCodigo.split("-");
+                int ultimoNumero = Integer.parseInt(partes[1]);
+                nuevoCorrelativo = ultimoNumero + 1;
+            }
+
+            String prefijo = String.format("%02d", idCategoria);
+            String correlativoFormateado = String.format("%04d", nuevoCorrelativo);
+            String nuevoCodigo = prefijo + "-" + correlativoFormateado;
+
+            // 4. Crear el objeto Producto
+            Producto p = new Producto();
+            p.setCodigoReferencia(nuevoCodigo);
+            p.setNombre(nombre);
+            p.setStockActual(stock);
+            p.setIdCategoria(idCategoria);
+            p.setStockMinimo(stockMinimo);
+            p.setDescripcion("Referencia General");
+
+            // 5. Guardar en base de datos
+            boolean exito = productoRepo.guardar(p);
+
+            return exito ? "OK" : "Error al guardar en la base de datos MySQL.";
+
+        } catch (NumberFormatException e) {
+            return "Error: Stock y Categoría deben ser números válidos.";
+        } catch (Exception e) {
+            return "Error en los datos.";
+        }
     }
 
-    public String agregarNuevoProducto(String idStr, String nombre, String stockStr, String precioStr) {
+    /**
+     * Elimina un producto por ID.
+     */
+    public boolean eliminarProducto(int id) {
+        return productoRepo.eliminar(id);
+    }
+
+    /**
+     * Edita los datos básicos de un producto existente.
+     */
+    public String editarProducto(int id, String nombre, String idCatStr, String stockMinStr) {
         try {
-            // Validaciones básicas de ingeniería: no dejar campos vacíos
-            if (nombre.trim().isEmpty()) return "El nombre no puede estar vacío.";
+            Producto p = new Producto();
+            p.setId(id);
+            p.setNombre(nombre);
+            p.setIdCategoria(Integer.parseInt(idCatStr));
+            p.setStockMinimo(Integer.parseInt(stockMinStr));
 
-            // Conversión de tipos con manejo de errores
-            int id = Integer.parseInt(idStr);
-            int stock = Integer.parseInt(stockStr);
-            double precio = Double.parseDouble(precioStr);
+            return productoRepo.actualizar(p) ? "OK" : "Error al actualizar";
 
-            if (stock < 0) return "El stock no puede ser negativo.";
-
-            // Creamos el objeto y lo mandamos al repositorio
-            Producto nuevo = new Producto(id, nombre, "Descripción pendiente", stock, precio);
-            repository.guardar(nuevo);
-
-            return "OK"; // Usamos un código simple para indicar éxito
-        } catch (NumberFormatException e) {
-            return "Error: ID, Stock y Precio deben ser números válidos.";
+        } catch (Exception e) {
+            return "Datos inválidos";
         }
     }
 
     public List<Producto> obtenerInventario() {
-        return repository.listarTodo();
+        return productoRepo.listarTodo();
+    }
+
+    public List<Categoria> obtenerCategorias() {
+        return categoriaRepo.listarCategorias();
     }
 }
