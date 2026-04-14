@@ -9,38 +9,60 @@ import java.sql.Connection;
 
 /**
  * Punto de entrada de la aplicación F&B Soluciones Integrales.
+ *
+ * RESPONSABILIDADES:
+ * ✔ Validar conexión a base de datos
+ * ✔ Configurar entorno visual (Look & Feel)
+ * ✔ Inicializar módulos (MVC)
+ * ✔ Lanzar interfaz gráfica
+ *
+ * 🔥 Preparado para:
+ * - Módulo de Compras
+ * - Módulo de Ventas
+ * - Dashboard principal
  */
 public class Main {
 
     public static void main(String[] args) {
 
-        // 🔹 1. Validar conexión a base de datos
-        probarConexion();
+        // 🔹 1. Validar conexión
+        if (!probarConexion()) {
+            JOptionPane.showMessageDialog(
+                    null,
+                    "No se pudo conectar a la base de datos.\nEl sistema se cerrará.",
+                    "Error de conexión",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return;
+        }
 
-        // 🔹 2. Configurar estilo visual
+        // 🔹 2. Look & Feel
         configurarLookAndFeel();
 
-        // 🔹 3. Lanzar UI en hilo de Swing
+        // 🔹 3. Lanzar UI (hilo seguro de Swing)
         SwingUtilities.invokeLater(Main::iniciarAplicacion);
     }
 
     /**
-     * Verifica la conexión a la base de datos.
+     * Verifica conexión a base de datos.
      */
-    private static void probarConexion() {
+    private static boolean probarConexion() {
         try (Connection conn = DatabaseConnection.getConnection()) {
 
             if (conn != null && !conn.isClosed()) {
                 System.out.println("✅ Conexión exitosa a la base de datos.");
+                return true;
             }
 
         } catch (Exception e) {
             System.err.println("❌ Error de conexión: " + e.getMessage());
         }
+
+        return false;
     }
 
     /**
-     * Configura el Look & Feel del sistema.
+     * Aplica estilo visual del sistema operativo.
      */
     private static void configurarLookAndFeel() {
         try {
@@ -52,24 +74,32 @@ public class Main {
     }
 
     /**
-     * Inicializa la aplicación con patrón MVC.
+     * Inicializa la aplicación con arquitectura MVC.
      */
     private static void iniciarAplicacion() {
 
-        // 🔹 1. Crear vista
-        InventarioView vista = new InventarioView();
+        // =========================
+        // 🔹 MÓDULO INVENTARIO
+        // =========================
 
-        // 🔹 2. Crear controller (inyecta vista)
-        InventarioController controller = new InventarioController(vista);
+        InventarioView inventarioView = new InventarioView();
+        InventarioController inventarioController = new InventarioController(inventarioView);
 
-        // 🔹 3. Inyectar controller en la vista
-        vista.setController(controller);
+        inventarioView.setController(inventarioController);
+        inventarioView.inicializarDatos();
 
-        // 🔹 4. Cargar datos
-        vista.inicializarDatos();
+        inventarioView.setVisible(true);
 
-        // 🔹 5. Mostrar UI
-        vista.setVisible(true);
+        // =========================
+        // 🔹 FUTURO: MÓDULO COMPRAS
+        // =========================
+        /*
+        ComprasView comprasView = new ComprasView();
+        ComprasController comprasController = new ComprasController(comprasView);
+
+        comprasView.setController(comprasController);
+        comprasView.inicializarDatos();
+        */
 
         System.out.println("🟢 Sistema F&B Soluciones iniciado correctamente.");
     }

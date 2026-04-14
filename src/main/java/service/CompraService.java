@@ -3,77 +3,105 @@ package service;
 import exception.BusinessException;
 import model.EntradaAlmacen;
 import repository.CompraRepository;
+import repository.ProductoRepository;
+import util.DatabaseConnection;
 import util.ParseUtil;
 
+import java.sql.Connection;
+
 /**
- * Servicio encargado de la lógica de negocio relacionada con las compras
- * (entradas de inventario).
+ * Servicio de compras con manejo de transacciones reales.
  *
- * Responsabilidades:
- * - Validar datos de entrada
- * - Construir el modelo de dominio
- * - Persistir la información
- *
- * 🔥 Base para futuras mejoras:
- * - Actualización automática de stock
- * - Cálculo de costos promedio
- * - Integración con analítica (Power BI)
+ * 🔥 RESPONSABILIDAD CRÍTICA:
+ * - Garantizar consistencia de datos
+ * - Manejar transacciones (commit / rollback)
  */
 public class CompraService {
 
     private CompraRepository compraRepo;
+    private ProductoRepository productoRepo;
 
-    /**
-     * Constructor: inicializa el repositorio de compras.
-     */
     public CompraService() {
         this.compraRepo = new CompraRepository();
+        this.productoRepo = new ProductoRepository();
     }
 
     /**
-     * Registra una nueva entrada de inventario (compra).
-     *
-     * Flujo:
-     * 1. Conversión de datos (ParseUtil)
-     * 2. Validaciones de negocio
-     * 3. Construcción del objeto EntradaAlmacen
-     * 4. Persistencia en base de datos
-     *
-     * @param idProducto ID del producto
-     * @param cantStr cantidad en texto
-     * @param precioStr precio en texto
-     * @param factura número de factura
-     * @return "OK" si es exitoso, mensaje de error si falla
+     * Registra una compra y actualiza stock en una sola transacción.
      */
     public String registrarCompra(int idProducto, String cantStr, String precioStr, String factura) {
 
+        Connection conn = null;
+
         try {
-            // 🔹 1. Conversión de datos
+            // =========================
+            // 🔹 1. CONVERSIÓN
+            // =========================
             int cantidad = ParseUtil.toPositiveInt(cantStr, "Cantidad");
             double precio = ParseUtil.toPositiveDouble(precioStr, "Precio");
 
-            // 🔹 2. Validaciones de negocio
+            // =========================
+            // 🔹 2. VALIDACIONES
+            // =========================
             validarDatos(idProducto, factura);
 
-            // 🔹 3. Construcción del objeto
+            // =========================
+            // 🔹 3. CREAR MODELO
+            // =========================
             EntradaAlmacen entrada = construirEntrada(idProducto, cantidad, precio, factura);
 
-            // 🔹 4. Persistencia
-            boolean exito = compraRepo.registrarEntrada(entrada);
+            // =========================
+            // 🔥 4. INICIAR TRANSACCIÓN
+            // =========================
+            conn = DatabaseConnection.getConnection();
+            conn.setAutoCommit(false); // 🔥 IMPORTANTE
 
-            return exito ? "OK" : "Error al registrar la compra en la base de datos.";
+            // =========================
+            // 🔹 5. INSERT COMPRA
+            // =========================
+            boolean compraOk = compraRepo.registrarEntrada(conn, entrada);
+
+            if (!compraOk) {
+                throw new RuntimeException("Error al registrar la compra");
+            }
+
+            // =========================
+            // 🔹 6. ACTUALIZAR STOCK
+            // =========================
+            boolean stockOk = productoRepo.aumentarStock(idProducto, cantidad);
+
+            if (!stockOk) {
+                throw new RuntimeException("Error al actualizar stock");
+            }
+
+            // =========================
+            // 🔥 7. COMMIT
+            // =========================
+            conn.commit();
+
+            return "OK";
 
         } catch (BusinessException e) {
+
+            rollback(conn);
             return e.getMessage();
+
         } catch (Exception e) {
-            e.printStackTrace(); // 🔥 luego lo reemplazamos por logger
+
+            rollback(conn);
+            e.printStackTrace();
             return "Error interno del sistema.";
+
+        } finally {
+
+            cerrarConexion(conn);
         }
     }
 
-    /**
-     * Valida reglas de negocio generales.
-     */
+    // =========================
+    // MÉTODOS AUXILIARES
+    // =========================
+
     private void validarDatos(int idProducto, String factura) {
 
         if (idProducto <= 0) {
@@ -85,9 +113,6 @@ public class CompraService {
         }
     }
 
-    /**
-     * Construye el objeto EntradaAlmacen con los datos recibidos.
-     */
     private EntradaAlmacen construirEntrada(int idProducto, int cantidad, double precio, String factura) {
 
         EntradaAlmacen entrada = new EntradaAlmacen();
@@ -96,10 +121,34 @@ public class CompraService {
         entrada.setPrecioCompra(precio);
         entrada.setNumeroFactura(factura);
 
-        // 🔥 Opcional (si luego agregas proveedor en UI)
-        // entrada.setProveedor("Proveedor General");
-
         return entrada;
     }
 
+    /**
+     * 🔥 Manejo de rollback seguro
+     */
+    private void rollback(Connection conn) {
+        try {
+            if (conn != null) {
+                conn.rollback();
+                System.out.println("↩️ Rollback ejecutado");
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    /**
+     * 🔥 Cierre de conexión seguro
+     */
+    private void cerrarConexion(Connection conn) {
+        try {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
 }

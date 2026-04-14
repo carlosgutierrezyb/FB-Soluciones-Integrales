@@ -11,20 +11,20 @@ import java.util.List;
  * Repositorio encargado de la persistencia de productos (tabla inventario).
  *
  * Responsabilidades:
- * - CRUD de productos
- * - Manejo de stock (entradas/salidas)
- * - Consultas específicas para lógica de negocio
+ * ✔ CRUD de productos
+ * ✔ Consultas de inventario
+ * ✔ Operaciones de stock (sin lógica de negocio)
  *
- * 🔥 Buenas prácticas aplicadas:
- * - Uso de PreparedStatement (prevención SQL Injection)
- * - Try-with-resources (cierre automático de conexiones)
- * - Métodos enfocados (Single Responsibility)
+ * ⚠️ IMPORTANTE:
+ * - No maneja transacciones
+ * - Puede recibir Connection desde Service para operaciones críticas
  */
 public class ProductoRepository {
 
-    /**
-     * Guarda un nuevo producto en la base de datos.
-     */
+    // =========================
+    // CRUD BÁSICO
+    // =========================
+
     public boolean guardar(Producto p) {
 
         String sql = "INSERT INTO inventario (codigo_referencia, nombre_item, cantidad, id_categoria, stock_minimo) VALUES (?, ?, ?, ?, ?)";
@@ -46,9 +46,6 @@ public class ProductoRepository {
         }
     }
 
-    /**
-     * Actualiza datos básicos de un producto.
-     */
     public boolean actualizar(Producto p) {
 
         String sql = "UPDATE inventario SET nombre_item = ?, id_categoria = ?, stock_minimo = ? WHERE id_item = ?";
@@ -69,9 +66,6 @@ public class ProductoRepository {
         }
     }
 
-    /**
-     * Elimina un producto por ID.
-     */
     public boolean eliminar(int id) {
 
         String sql = "DELETE FROM inventario WHERE id_item = ?";
@@ -88,9 +82,10 @@ public class ProductoRepository {
         }
     }
 
-    /**
-     * Lista todos los productos.
-     */
+    // =========================
+    // CONSULTAS
+    // =========================
+
     public List<Producto> listarTodo() {
 
         List<Producto> lista = new ArrayList<>();
@@ -112,9 +107,6 @@ public class ProductoRepository {
         return lista;
     }
 
-    /**
-     * Busca un producto por ID.
-     */
     public Producto buscarPorId(int id) {
 
         String sql = "SELECT * FROM inventario WHERE id_item = ?";
@@ -136,9 +128,10 @@ public class ProductoRepository {
         return null;
     }
 
-    /**
-     * 🔥 Aumenta el stock (compras).
-     */
+    // =========================
+    // STOCK (BÁSICO)
+    // =========================
+
     public boolean aumentarStock(int idProducto, int cantidad) {
 
         String sql = "UPDATE inventario SET cantidad = cantidad + ? WHERE id_item = ?";
@@ -157,10 +150,6 @@ public class ProductoRepository {
         }
     }
 
-    /**
-     * 🔻 Disminuye el stock (ventas).
-     * Evita que el stock quede negativo.
-     */
     public boolean disminuirStock(int idProducto, int cantidad) {
 
         String sql = "UPDATE inventario SET cantidad = cantidad - ? WHERE id_item = ? AND cantidad >= ?";
@@ -180,10 +169,38 @@ public class ProductoRepository {
         }
     }
 
+    // =========================
+    // 🔥 STOCK PARA TRANSACCIONES (PRO)
+    // =========================
+
     /**
-     * Obtiene el último código generado por categoría.
-     * Se usa para generar nuevos códigos tipo: 01-0001
+     * Actualiza el stock dentro de una transacción controlada por el Service.
+     *
+     * @param conn conexión activa
+     * @param idProducto producto a actualizar
+     * @param cantidad cantidad a sumar
      */
+    public boolean actualizarStock(Connection conn, int idProducto, int cantidad) {
+
+        String sql = "UPDATE inventario SET cantidad = cantidad + ? WHERE id_item = ?";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, cantidad);
+            ps.setInt(2, idProducto);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            System.err.println("Error en actualización de stock (transacción): " + e.getMessage());
+            return false;
+        }
+    }
+
+    // =========================
+    // OTROS
+    // =========================
+
     public String obtenerUltimoCodigoPorCategoria(int idCategoria) {
 
         String sql = "SELECT codigo_referencia FROM inventario WHERE id_categoria = ? ORDER BY codigo_referencia DESC LIMIT 1";
@@ -205,9 +222,6 @@ public class ProductoRepository {
         return null;
     }
 
-    /**
-     * 🔍 Busca productos con stock bajo (alertas).
-     */
     public List<Producto> listarStockBajo() {
 
         List<Producto> lista = new ArrayList<>();
@@ -230,7 +244,7 @@ public class ProductoRepository {
     }
 
     /**
-     * 🧩 Método reutilizable para mapear ResultSet → Producto
+     * Mapper centralizado
      */
     private Producto mapearProducto(ResultSet rs) throws SQLException {
 
