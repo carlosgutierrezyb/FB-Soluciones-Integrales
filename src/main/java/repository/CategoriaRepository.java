@@ -28,7 +28,7 @@ public class CategoriaRepository {
 
             while (rs.next()) {
                 Categoria cat = new Categoria();
-                cat.setIdCat(rs.getInt("id_cat"));
+                cat.setId(rs.getInt("id_cat"));
                 cat.setNombre(rs.getString("nombre"));
                 lista.add(cat);
             }

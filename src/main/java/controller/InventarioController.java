@@ -4,93 +4,88 @@ import model.Categoria;
 import model.Producto;
 import repository.CategoriaRepository;
 import repository.ProductoRepository;
+import service.ProductoService;
+import service.CompraService;
+import view.InventarioView;
+
 import java.util.List;
 
+/**
+ * Controlador encargado de coordinar la interacción entre la Vista y la lógica del sistema.
+ */
 public class InventarioController {
 
+    // 🔹 Vista
+    private InventarioView vista;
+
+    // 🔹 Repositorios
     private ProductoRepository productoRepo;
     private CategoriaRepository categoriaRepo;
 
+    // 🔹 Servicios
+    private ProductoService productoService;
+    private CompraService compraService;
+
+    /**
+     * Constructor original (lo dejamos para no romper nada)
+     */
     public InventarioController() {
+        inicializarDependencias();
+    }
+
+    /**
+     * 🔥 Constructor PRO con inyección de vista (MVC real)
+     */
+    public InventarioController(InventarioView vista) {
+        this.vista = vista;
+        inicializarDependencias();
+        inicializarEventos(); // 🔥 clave
+    }
+
+    /**
+     * Inicializa repositorios y servicios
+     */
+    private void inicializarDependencias() {
         this.productoRepo = new ProductoRepository();
         this.categoriaRepo = new CategoriaRepository();
+        this.productoService = new ProductoService();
+        this.compraService = new CompraService();
     }
 
     /**
-     * Recibe los datos de la Vista, los valida y los envía al Repositorio.
+     * 🔥 Conecta la vista con la lógica
      */
+    private void inicializarEventos() {
+
+        if (vista == null) return;
+
+        // 👉 Ejemplo (ajústalo a tus botones reales)
+        /*
+        vista.getBtnAgregar().addActionListener(e -> {
+            String nombre = vista.getTxtNombre().getText();
+            String stock = vista.getTxtStock().getText();
+            String categoria = vista.getTxtCategoria().getText();
+            String stockMin = vista.getTxtStockMin().getText();
+
+            String resultado = agregarNuevoProducto(nombre, stock, categoria, stockMin);
+
+            JOptionPane.showMessageDialog(vista, resultado);
+        });
+        */
+    }
+
+    // ================== MÉTODOS ACTUALES ==================
+
     public String agregarNuevoProducto(String nombre, String stockStr, String idCatStr, String stockMinStr) {
-        try {
-            // 1. Validaciones básicas
-            if (nombre.trim().isEmpty()) return "El nombre de la referencia es obligatorio.";
-
-            // 2. Conversión de datos (Parsing)
-            int stock = Integer.parseInt(stockStr);
-            int idCategoria = Integer.parseInt(idCatStr);
-            int stockMinimo = Integer.parseInt(stockMinStr);
-
-            if (stock < 0 || stockMinimo < 0) return "Las cantidades no pueden ser negativas.";
-
-            // 3. GENERAR CÓDIGO SECUENCIAL POR CATEGORÍA
-            String ultimoCodigo = productoRepo.obtenerUltimoCodigoPorCategoria(idCategoria);
-
-            int nuevoCorrelativo = 1;
-
-            if (ultimoCodigo != null) {
-                // Ejemplo formato: 01-0005
-                String[] partes = ultimoCodigo.split("-");
-                int ultimoNumero = Integer.parseInt(partes[1]);
-                nuevoCorrelativo = ultimoNumero + 1;
-            }
-
-            String prefijo = String.format("%02d", idCategoria);
-            String correlativoFormateado = String.format("%04d", nuevoCorrelativo);
-            String nuevoCodigo = prefijo + "-" + correlativoFormateado;
-
-            // 4. Crear el objeto Producto
-            Producto p = new Producto();
-            p.setCodigoReferencia(nuevoCodigo);
-            p.setNombre(nombre);
-            p.setStockActual(stock);
-            p.setIdCategoria(idCategoria);
-            p.setStockMinimo(stockMinimo);
-            p.setDescripcion("Referencia General");
-
-            // 5. Guardar en base de datos
-            boolean exito = productoRepo.guardar(p);
-
-            return exito ? "OK" : "Error al guardar en la base de datos MySQL.";
-
-        } catch (NumberFormatException e) {
-            return "Error: Stock y Categoría deben ser números válidos.";
-        } catch (Exception e) {
-            return "Error en los datos.";
-        }
+        return productoService.agregarProducto(nombre, stockStr, idCatStr, stockMinStr);
     }
 
-    /**
-     * Elimina un producto por ID.
-     */
     public boolean eliminarProducto(int id) {
         return productoRepo.eliminar(id);
     }
 
-    /**
-     * Edita los datos básicos de un producto existente.
-     */
     public String editarProducto(int id, String nombre, String idCatStr, String stockMinStr) {
-        try {
-            Producto p = new Producto();
-            p.setId(id);
-            p.setNombre(nombre);
-            p.setIdCategoria(Integer.parseInt(idCatStr));
-            p.setStockMinimo(Integer.parseInt(stockMinStr));
-
-            return productoRepo.actualizar(p) ? "OK" : "Error al actualizar";
-
-        } catch (Exception e) {
-            return "Datos inválidos";
-        }
+        return productoService.editarProducto(id, nombre, idCatStr, stockMinStr);
     }
 
     public List<Producto> obtenerInventario() {
@@ -99,5 +94,9 @@ public class InventarioController {
 
     public List<Categoria> obtenerCategorias() {
         return categoriaRepo.listarCategorias();
+    }
+
+    public String registrarCompra(int idItem, String cantStr, String precioStr, String factura) {
+        return compraService.registrarCompra(idItem, cantStr, precioStr, factura);
     }
 }

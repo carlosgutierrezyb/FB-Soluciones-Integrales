@@ -10,24 +10,39 @@ import java.util.List;
 import javax.swing.table.DefaultTableCellRenderer;
 
 /**
- * Ventana de Catálogo de Inventario.
- * El Código de Referencia se genera automáticamente y se muestra en la tabla.
+ * Vista de Inventario (Catálogo de Productos)
+ * * Responsabilidades:
+ * - Mostrar productos registrados
+ * - Permitir crear, editar y eliminar productos
+ * - Mostrar alertas visuales de stock bajo
  */
 public class InventarioView extends JFrame {
 
+    // =========================
+    // COMPONENTES UI
+    // =========================
     private JTable tablaProductos;
     private DefaultTableModel modeloTabla;
+
     private JTextField txtNombre, txtStock, txtStockMinimo;
     private JComboBox<Categoria> comboCategorias;
+
     private JButton btnGuardar, btnRefrescar;
     private JButton btnEliminar, btnLimpiar;
-    private int idSeleccionado = -1;
 
+    private int idSeleccionado = -1;
     private InventarioController controller;
 
-    public InventarioView() {
-        this.controller = new InventarioController();
+    public void setController(InventarioController controller) {
+        this.controller = controller;
+    }
 
+    public void inicializarDatos() {
+        cargarCategorias();
+        refrescarTabla();
+    }
+
+    public InventarioView() {
         setTitle("F&B Soluciones Integrales - Catálogo de Referencias");
         setSize(950, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -35,11 +50,10 @@ public class InventarioView extends JFrame {
         setLayout(new BorderLayout(10, 10));
 
         inicializarComponentes();
-        refrescarTabla();
     }
 
     private void inicializarComponentes() {
-
+        // Panel del formulario
         JPanel panelFormulario = new JPanel(new GridLayout(2, 4, 15, 15));
         panelFormulario.setBorder(BorderFactory.createTitledBorder("Crear Nueva Referencia"));
 
@@ -47,7 +61,6 @@ public class InventarioView extends JFrame {
         txtStock = new JTextField();
         txtStockMinimo = new JTextField();
         comboCategorias = new JComboBox<>();
-        cargarCategorias();
 
         panelFormulario.add(new JLabel("Nombre del Producto:"));
         panelFormulario.add(txtNombre);
@@ -59,6 +72,7 @@ public class InventarioView extends JFrame {
         panelFormulario.add(new JLabel("Stock Mínimo (Alerta):"));
         panelFormulario.add(txtStockMinimo);
 
+        // Modelo de tabla
         String[] columnas = {"ID BD", "Código SKU", "Nombre Referencia", "Stock", "Mínimo"};
         modeloTabla = new DefaultTableModel(columnas, 0) {
             @Override
@@ -73,6 +87,7 @@ public class InventarioView extends JFrame {
 
         JScrollPane scrollTabla = new JScrollPane(tablaProductos);
 
+        // Panel de botones
         JPanel panelAcciones = new JPanel();
 
         btnGuardar = new JButton("Registrar en Catálogo");
@@ -80,11 +95,22 @@ public class InventarioView extends JFrame {
         btnEliminar = new JButton("Eliminar Seleccionado");
         btnLimpiar = new JButton("Limpiar Formulario");
 
+        // --- CORRECCIÓN DE ESTILOS PARA BOTONES ---
+        // Botón Guardar (Azul)
         btnGuardar.setBackground(new Color(0, 102, 204));
         btnGuardar.setForeground(Color.WHITE);
+        btnGuardar.setFocusPainted(false);
+        btnGuardar.setContentAreaFilled(true);
+        btnGuardar.setOpaque(true);
+        btnGuardar.setBorderPainted(false);
 
+        // Botón Eliminar (Rojo)
         btnEliminar.setBackground(new Color(204, 0, 0));
         btnEliminar.setForeground(Color.WHITE);
+        btnEliminar.setFocusPainted(false);
+        btnEliminar.setContentAreaFilled(true);
+        btnEliminar.setOpaque(true);
+        btnEliminar.setBorderPainted(false);
 
         panelAcciones.add(btnGuardar);
         panelAcciones.add(btnRefrescar);
@@ -95,7 +121,9 @@ public class InventarioView extends JFrame {
         add(scrollTabla, BorderLayout.CENTER);
         add(panelAcciones, BorderLayout.SOUTH);
 
+        // =========================
         // EVENTOS
+        // =========================
         btnGuardar.addActionListener(e -> ejecutarGuardado());
         btnRefrescar.addActionListener(e -> refrescarTabla());
         btnEliminar.addActionListener(e -> ejecutarEliminacion());
@@ -105,15 +133,10 @@ public class InventarioView extends JFrame {
             if (!e.getValueIsAdjusting()) {
                 int fila = tablaProductos.getSelectedRow();
                 if (fila != -1) {
-
                     idSeleccionado = (int) modeloTabla.getValueAt(fila, 0);
-                    String nombre = (String) modeloTabla.getValueAt(fila, 2);
-                    int stock = (int) modeloTabla.getValueAt(fila, 3);
-                    int stockMin = (int) modeloTabla.getValueAt(fila, 4);
-
-                    txtNombre.setText(nombre);
-                    txtStock.setText(String.valueOf(stock));
-                    txtStockMinimo.setText(String.valueOf(stockMin));
+                    txtNombre.setText((String) modeloTabla.getValueAt(fila, 2));
+                    txtStock.setText(String.valueOf(modeloTabla.getValueAt(fila, 3)));
+                    txtStockMinimo.setText(String.valueOf(modeloTabla.getValueAt(fila, 4)));
 
                     btnGuardar.setText("Actualizar Cambios");
                     txtStock.setEnabled(false);
@@ -123,6 +146,7 @@ public class InventarioView extends JFrame {
     }
 
     private void cargarCategorias() {
+        if (controller == null) return;
         comboCategorias.removeAllItems();
         List<Categoria> lista = controller.obtenerCategorias();
         for (Categoria cat : lista) {
@@ -131,31 +155,25 @@ public class InventarioView extends JFrame {
     }
 
     private void ejecutarGuardado() {
-
         Categoria catSeleccionada = (Categoria) comboCategorias.getSelectedItem();
-
         if (catSeleccionada == null) {
             JOptionPane.showMessageDialog(this, "Seleccione una categoría primero.");
             return;
         }
 
         String resultado;
-
         if (idSeleccionado == -1) {
-
             resultado = controller.agregarNuevoProducto(
                     txtNombre.getText(),
                     txtStock.getText(),
-                    String.valueOf(catSeleccionada.getIdCat()),
+                    String.valueOf(catSeleccionada.getId()), // Usamos getIdCat()
                     txtStockMinimo.getText()
             );
-
         } else {
-
             resultado = controller.editarProducto(
                     idSeleccionado,
                     txtNombre.getText(),
-                    String.valueOf(catSeleccionada.getIdCat()),
+                    String.valueOf(catSeleccionada.getId()), // Usamos getIdCat()
                     txtStockMinimo.getText()
             );
         }
@@ -170,21 +188,17 @@ public class InventarioView extends JFrame {
     }
 
     private void ejecutarEliminacion() {
-
         if (idSeleccionado == -1) {
             JOptionPane.showMessageDialog(this, "Seleccione un producto primero.");
             return;
         }
 
         int confirmacion = JOptionPane.showConfirmDialog(
-                this,
-                "¿Está seguro de eliminar esta referencia?",
-                "Confirmar Eliminación",
-                JOptionPane.YES_NO_OPTION
+                this, "¿Está seguro de eliminar esta referencia?",
+                "Confirmar Eliminación", JOptionPane.YES_NO_OPTION
         );
 
         if (confirmacion == JOptionPane.YES_OPTION) {
-
             if (controller.eliminarProducto(idSeleccionado)) {
                 JOptionPane.showMessageDialog(this, "Referencia eliminada.");
                 limpiarCampos();
@@ -196,59 +210,47 @@ public class InventarioView extends JFrame {
     }
 
     private void refrescarTabla() {
-
+        if (controller == null) return;
         modeloTabla.setRowCount(0);
         List<Producto> lista = controller.obtenerInventario();
 
         boolean hayAlertas = false;
-
         for (Producto p : lista) {
-
-            Object[] fila = {
+            modeloTabla.addRow(new Object[]{
                     p.getId(),
                     p.getCodigoReferencia(),
                     p.getNombre(),
                     p.getStockActual(),
                     p.getStockMinimo()
-            };
+            });
 
-            modeloTabla.addRow(fila);
-
-            // 🔴 Verificación de alerta
             if (p.getStockActual() < p.getStockMinimo()) {
                 hayAlertas = true;
             }
         }
 
-        // Mostrar alerta si hay productos bajos
-        if (hayAlertas) {
+        if (hayAlertas && modeloTabla.getRowCount() > 0) {
             JOptionPane.showMessageDialog(
-                    this,
-                    "⚠ Hay productos con stock por debajo del mínimo.",
-                    "Alerta de Inventario",
-                    JOptionPane.WARNING_MESSAGE
+                    this, "⚠ Hay productos con stock por debajo del mínimo.",
+                    "Alerta de Inventario", JOptionPane.WARNING_MESSAGE
             );
         }
     }
 
     private void limpiarCampos() {
-
         idSeleccionado = -1;
         txtNombre.setText("");
         txtStock.setText("");
         txtStockMinimo.setText("");
         txtStock.setEnabled(true);
         btnGuardar.setText("Registrar en Catálogo");
-
         if (comboCategorias.getItemCount() > 0)
             comboCategorias.setSelectedIndex(0);
-
         tablaProductos.clearSelection();
         txtNombre.requestFocus();
     }
 
     class StockBajoRenderer extends DefaultTableCellRenderer {
-
         @Override
         public Component getTableCellRendererComponent(
                 JTable table, Object value, boolean isSelected,
@@ -262,15 +264,12 @@ public class InventarioView extends JFrame {
 
             if (stock < minimo) {
                 c.setBackground(new Color(255, 199, 206)); // Rojo claro
-                c.setForeground(Color.BLACK);
+                c.setForeground(Color.BLACK); // Forzar texto negro para legibilidad
             } else {
                 c.setBackground(isSelected ? table.getSelectionBackground() : Color.WHITE);
-                c.setForeground(Color.BLACK);
+                c.setForeground(isSelected ? table.getSelectionForeground() : Color.BLACK);
             }
-
             return c;
         }
     }
-
 }
-
