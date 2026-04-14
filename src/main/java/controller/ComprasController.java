@@ -1,44 +1,40 @@
 package controller;
 
 import model.Producto;
+import repository.ProductoRepository;
 import service.CompraService;
-import service.ProductoService;
 
 import java.util.List;
 
 /**
- * Controlador del módulo de Compras.
+ * Controlador del módulo de compras.
  *
  * Responsabilidades:
- * - Conectar la vista de compras con la lógica de negocio
- * - Delegar operaciones al CompraService
- *
- * 🔥 NO contiene lógica de negocio
+ * - Conectar la vista con el servicio
+ * - Proveer datos (productos)
+ * - Ejecutar compras
  */
 public class ComprasController {
 
     private CompraService compraService;
-    private ProductoService productoService;
+    private ProductoRepository productoRepo;
 
-    /**
-     * Constructor
-     */
     public ComprasController() {
         this.compraService = new CompraService();
-        this.productoService = new ProductoService();
+        this.productoRepo = new ProductoRepository();
     }
 
     /**
-     * Obtiene lista de productos para el combo.
+     * Retorna lista de productos para el combo.
      */
     public List<Producto> obtenerProductos() {
-        return productoService.listarProductos();
+        return productoRepo.listarTodo();
     }
 
     /**
-     * Registra una compra.
+     * Ejecuta una compra.
      */
-    public String registrarCompra(int idProducto, String cantidad, String precio, String factura) {
-        return compraService.registrarCompra(idProducto, cantidad, precio, factura);
+    public String registrarCompra(int idProducto, String cantidad, String precio, String proveedor, String factura) {
+        return compraService.registrarCompra(idProducto, cantidad, precio, proveedor, factura);
     }
 }

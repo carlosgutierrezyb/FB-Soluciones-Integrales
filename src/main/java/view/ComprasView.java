@@ -11,113 +11,86 @@ import java.util.List;
  * Vista del módulo de Compras.
  *
  * RESPONSABILIDADES:
- * - Permitir registrar entradas de inventario
- * - Interactuar con el ComprasController
+ * ✔ Registrar entradas de inventario
+ * ✔ Seleccionar producto
+ * ✔ Ingresar cantidad, precio, proveedor y factura
  *
- * 🔥 Mantiene el mismo estilo visual del InventarioView
+ * 🔥 Mantiene el mismo estilo profesional que InventarioView
  */
 public class ComprasView extends JFrame {
 
-    // =========================
-    // COMPONENTES UI
-    // =========================
-
     private JComboBox<Producto> comboProductos;
-    private JTextField txtCantidad, txtPrecio, txtFactura;
+    private JTextField txtCantidad, txtPrecio, txtProveedor, txtFactura;
 
     private JButton btnRegistrar, btnLimpiar;
 
     private ComprasController controller;
 
-    // =========================
-    // CONEXIÓN MVC
-    // =========================
-
     public void setController(ComprasController controller) {
         this.controller = controller;
     }
 
-    /**
-     * Se ejecuta después de inyectar el controller
-     */
     public void inicializarDatos() {
         cargarProductos();
     }
 
-    // =========================
-    // CONSTRUCTOR
-    // =========================
-
     public ComprasView() {
 
         setTitle("F&B Soluciones Integrales - Módulo de Compras");
-        setSize(500, 350);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setSize(600, 400);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
         inicializarComponentes();
     }
 
-    // =========================
-    // UI
-    // =========================
-
     private void inicializarComponentes() {
 
-        JPanel panelFormulario = new JPanel(new GridLayout(4, 2, 15, 15));
-        panelFormulario.setBorder(BorderFactory.createTitledBorder("Registrar Compra"));
+        JPanel panel = new JPanel(new GridLayout(5, 2, 15, 15));
+        panel.setBorder(BorderFactory.createTitledBorder("Registrar Compra"));
 
         comboProductos = new JComboBox<>();
         txtCantidad = new JTextField();
         txtPrecio = new JTextField();
+        txtProveedor = new JTextField();
         txtFactura = new JTextField();
 
-        panelFormulario.add(new JLabel("Producto:"));
-        panelFormulario.add(comboProductos);
+        panel.add(new JLabel("Producto:"));
+        panel.add(comboProductos);
 
-        panelFormulario.add(new JLabel("Cantidad:"));
-        panelFormulario.add(txtCantidad);
+        panel.add(new JLabel("Cantidad:"));
+        panel.add(txtCantidad);
 
-        panelFormulario.add(new JLabel("Precio Unitario:"));
-        panelFormulario.add(txtPrecio);
+        panel.add(new JLabel("Precio Compra:"));
+        panel.add(txtPrecio);
 
-        panelFormulario.add(new JLabel("Número de Factura:"));
-        panelFormulario.add(txtFactura);
+        panel.add(new JLabel("Proveedor:"));
+        panel.add(txtProveedor);
 
-        // =========================
-        // BOTONES
-        // =========================
+        panel.add(new JLabel("Factura:"));
+        panel.add(txtFactura);
 
-        JPanel panelAcciones = new JPanel();
+        JPanel panelBotones = new JPanel();
 
         btnRegistrar = new JButton("Registrar Compra");
         btnLimpiar = new JButton("Limpiar");
 
-        // Estilo profesional (igual inventario)
         btnRegistrar.setBackground(new Color(0, 153, 76));
         btnRegistrar.setForeground(Color.WHITE);
         btnRegistrar.setFocusPainted(false);
         btnRegistrar.setOpaque(true);
         btnRegistrar.setBorderPainted(false);
 
-        panelAcciones.add(btnRegistrar);
-        panelAcciones.add(btnLimpiar);
+        panelBotones.add(btnRegistrar);
+        panelBotones.add(btnLimpiar);
 
-        add(panelFormulario, BorderLayout.CENTER);
-        add(panelAcciones, BorderLayout.SOUTH);
+        add(panel, BorderLayout.CENTER);
+        add(panelBotones, BorderLayout.SOUTH);
 
-        // =========================
         // EVENTOS
-        // =========================
-
-        btnRegistrar.addActionListener(e -> ejecutarCompra());
-        btnLimpiar.addActionListener(e -> limpiarCampos());
+        btnRegistrar.addActionListener(e -> registrarCompra());
+        btnLimpiar.addActionListener(e -> limpiar());
     }
-
-    // =========================
-    // LÓGICA UI
-    // =========================
 
     private void cargarProductos() {
 
@@ -132,9 +105,7 @@ public class ComprasView extends JFrame {
         }
     }
 
-    private void ejecutarCompra() {
-
-        if (controller == null) return;
+    private void registrarCompra() {
 
         Producto producto = (Producto) comboProductos.getSelectedItem();
 
@@ -147,27 +118,23 @@ public class ComprasView extends JFrame {
                 producto.getId(),
                 txtCantidad.getText(),
                 txtPrecio.getText(),
+                txtProveedor.getText(),
                 txtFactura.getText()
         );
 
         if (resultado.equals("OK")) {
-            JOptionPane.showMessageDialog(this, "✅ Compra registrada correctamente.");
-            limpiarCampos();
+            JOptionPane.showMessageDialog(this, "Compra registrada correctamente.");
+            limpiar();
         } else {
             JOptionPane.showMessageDialog(this, resultado, "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void limpiarCampos() {
-
+    private void limpiar() {
         txtCantidad.setText("");
         txtPrecio.setText("");
+        txtProveedor.setText("");
         txtFactura.setText("");
-
-        if (comboProductos.getItemCount() > 0) {
-            comboProductos.setSelectedIndex(0);
-        }
-
-        txtCantidad.requestFocus();
+        comboProductos.setSelectedIndex(0);
     }
 }

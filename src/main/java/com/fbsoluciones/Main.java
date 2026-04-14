@@ -1,6 +1,8 @@
 package com.fbsoluciones;
 
+import controller.DashboardController;
 import controller.InventarioController;
+import view.DashboardView;
 import view.InventarioView;
 import util.DatabaseConnection;
 
@@ -78,29 +80,15 @@ public class Main {
      */
     private static void iniciarAplicacion() {
 
-        // =========================
-        // 🔹 MÓDULO INVENTARIO
-        // =========================
+        // 🔹 Crear Dashboard
+        DashboardView dashboard = new DashboardView();
 
-        InventarioView inventarioView = new InventarioView();
-        InventarioController inventarioController = new InventarioController(inventarioView);
+        // 🔹 Conectar Controller
+        new DashboardController(dashboard);
 
-        inventarioView.setController(inventarioController);
-        inventarioView.inicializarDatos();
+        // 🔹 Mostrar
+        dashboard.setVisible(true);
 
-        inventarioView.setVisible(true);
-
-        // =========================
-        // 🔹 FUTURO: MÓDULO COMPRAS
-        // =========================
-        /*
-        ComprasView comprasView = new ComprasView();
-        ComprasController comprasController = new ComprasController(comprasView);
-
-        comprasView.setController(comprasController);
-        comprasView.inicializarDatos();
-        */
-
-        System.out.println("🟢 Sistema F&B Soluciones iniciado correctamente.");
+        System.out.println("🟢 Sistema F&B iniciado con Dashboard.");
     }
 }

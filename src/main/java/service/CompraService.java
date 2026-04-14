@@ -29,7 +29,7 @@ public class CompraService {
     /**
      * Registra una compra y actualiza stock en una sola transacción.
      */
-    public String registrarCompra(int idProducto, String cantStr, String precioStr, String factura) {
+    public String registrarCompra(int idProducto, String cantStr, String precioStr, String proveedor, String factura) {
 
         Connection conn = null;
 
@@ -43,18 +43,18 @@ public class CompraService {
             // =========================
             // 🔹 2. VALIDACIONES
             // =========================
-            validarDatos(idProducto, factura);
+            validarDatos(idProducto, factura, proveedor);
 
             // =========================
             // 🔹 3. CREAR MODELO
             // =========================
-            EntradaAlmacen entrada = construirEntrada(idProducto, cantidad, precio, factura);
+            EntradaAlmacen entrada = construirEntrada(idProducto, cantidad, precio, factura, proveedor);
 
             // =========================
             // 🔥 4. INICIAR TRANSACCIÓN
             // =========================
             conn = DatabaseConnection.getConnection();
-            conn.setAutoCommit(false); // 🔥 IMPORTANTE
+            conn.setAutoCommit(false);
 
             // =========================
             // 🔹 5. INSERT COMPRA
@@ -66,9 +66,9 @@ public class CompraService {
             }
 
             // =========================
-            // 🔹 6. ACTUALIZAR STOCK
+            // 🔹 6. ACTUALIZAR STOCK (MISMA CONEXIÓN 🔥)
             // =========================
-            boolean stockOk = productoRepo.aumentarStock(idProducto, cantidad);
+            boolean stockOk = productoRepo.actualizarStock(conn, idProducto, cantidad);
 
             if (!stockOk) {
                 throw new RuntimeException("Error al actualizar stock");
@@ -102,31 +102,33 @@ public class CompraService {
     // MÉTODOS AUXILIARES
     // =========================
 
-    private void validarDatos(int idProducto, String factura) {
+    private void validarDatos(int idProducto, String factura, String proveedor) {
 
         if (idProducto <= 0) {
             throw new BusinessException("El producto es obligatorio.");
         }
 
         if (factura == null || factura.trim().isEmpty()) {
-            throw new BusinessException("El número de factura es obligatorio.");
+            throw new BusinessException("La factura es obligatoria.");
+        }
+
+        if (proveedor == null || proveedor.trim().isEmpty()) {
+            throw new BusinessException("El proveedor es obligatorio.");
         }
     }
 
-    private EntradaAlmacen construirEntrada(int idProducto, int cantidad, double precio, String factura) {
+    private EntradaAlmacen construirEntrada(int idProducto, int cantidad, double precio, String factura, String proveedor) {
 
         EntradaAlmacen entrada = new EntradaAlmacen();
         entrada.setIdProducto(idProducto);
         entrada.setCantidad(cantidad);
         entrada.setPrecioCompra(precio);
         entrada.setNumeroFactura(factura);
+        entrada.setProveedor(proveedor);
 
         return entrada;
     }
 
-    /**
-     * 🔥 Manejo de rollback seguro
-     */
     private void rollback(Connection conn) {
         try {
             if (conn != null) {
@@ -138,9 +140,6 @@ public class CompraService {
         }
     }
 
-    /**
-     * 🔥 Cierre de conexión seguro
-     */
     private void cerrarConexion(Connection conn) {
         try {
             if (conn != null) {
