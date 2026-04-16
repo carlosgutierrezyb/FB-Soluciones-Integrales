@@ -2,26 +2,20 @@ package view;
 
 import controller.ComprasController;
 import model.Producto;
+import model.Proveedor;
+import view.ProveedorView;
+import controller.ProveedorController;
 
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
 
-/**
- * Vista del módulo de Compras.
- *
- * RESPONSABILIDADES:
- * ✔ Registrar entradas de inventario
- * ✔ Seleccionar producto
- * ✔ Ingresar cantidad, precio, proveedor y factura
- *
- * 🔥 Mantiene el mismo estilo profesional que InventarioView
- */
 public class ComprasView extends JFrame {
 
     private JComboBox<Producto> comboProductos;
-    private JTextField txtCantidad, txtPrecio, txtProveedor, txtFactura;
-
+    private JTextField txtCantidad, txtPrecio, txtFactura;
+    private JComboBox<Proveedor> comboProveedores;
+    private JButton btnNuevoProveedor;
     private JButton btnRegistrar, btnLimpiar;
 
     private ComprasController controller;
@@ -32,12 +26,13 @@ public class ComprasView extends JFrame {
 
     public void inicializarDatos() {
         cargarProductos();
+        cargarProveedores();
     }
 
     public ComprasView() {
 
         setTitle("F&B Soluciones Integrales - Módulo de Compras");
-        setSize(600, 400);
+        setSize(650, 420);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
@@ -52,24 +47,36 @@ public class ComprasView extends JFrame {
         comboProductos = new JComboBox<>();
         txtCantidad = new JTextField();
         txtPrecio = new JTextField();
-        txtProveedor = new JTextField();
+        comboProveedores = new JComboBox<>();
+        btnNuevoProveedor = new JButton("+");
         txtFactura = new JTextField();
 
+        // 🔹 Producto
         panel.add(new JLabel("Producto:"));
         panel.add(comboProductos);
 
+        // 🔹 Cantidad
         panel.add(new JLabel("Cantidad:"));
         panel.add(txtCantidad);
 
+        // 🔹 Precio
         panel.add(new JLabel("Precio Compra:"));
         panel.add(txtPrecio);
 
+        // 🔹 Proveedor
         panel.add(new JLabel("Proveedor:"));
-        panel.add(txtProveedor);
 
+        JPanel panelProveedor = new JPanel(new BorderLayout(5, 0));
+        panelProveedor.add(comboProveedores, BorderLayout.CENTER);
+        panelProveedor.add(btnNuevoProveedor, BorderLayout.EAST);
+
+        panel.add(panelProveedor); // ✅ AQUÍ estaba el error
+
+        // 🔹 Factura
         panel.add(new JLabel("Factura:"));
         panel.add(txtFactura);
 
+        // 🔹 Botones
         JPanel panelBotones = new JPanel();
 
         btnRegistrar = new JButton("Registrar Compra");
@@ -87,9 +94,22 @@ public class ComprasView extends JFrame {
         add(panel, BorderLayout.CENTER);
         add(panelBotones, BorderLayout.SOUTH);
 
+        // =========================
         // EVENTOS
+        // =========================
+
         btnRegistrar.addActionListener(e -> registrarCompra());
         btnLimpiar.addActionListener(e -> limpiar());
+
+        btnNuevoProveedor.addActionListener(e -> {
+
+            ProveedorView form = new ProveedorView(this);
+            form.setController(new ProveedorController());
+
+            form.setVisible(true);
+
+            // 🔥 (en el siguiente paso recargamos proveedores automáticamente)
+        });
     }
 
     private void cargarProductos() {
@@ -105,12 +125,31 @@ public class ComprasView extends JFrame {
         }
     }
 
+    private void cargarProveedores() {
+
+        if (controller == null) return;
+
+        comboProveedores.removeAllItems();
+
+        List<Proveedor> lista = controller.obtenerProveedores();
+
+        for (Proveedor p : lista) {
+            comboProveedores.addItem(p);
+        }
+    }
+
     private void registrarCompra() {
 
         Producto producto = (Producto) comboProductos.getSelectedItem();
+        Proveedor proveedor = (Proveedor) comboProveedores.getSelectedItem();
 
         if (producto == null) {
             JOptionPane.showMessageDialog(this, "Seleccione un producto.");
+            return;
+        }
+
+        if (proveedor == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione un proveedor.");
             return;
         }
 
@@ -118,7 +157,7 @@ public class ComprasView extends JFrame {
                 producto.getId(),
                 txtCantidad.getText(),
                 txtPrecio.getText(),
-                txtProveedor.getText(),
+                proveedor.getNombreRazonSocial(),
                 txtFactura.getText()
         );
 
@@ -133,8 +172,12 @@ public class ComprasView extends JFrame {
     private void limpiar() {
         txtCantidad.setText("");
         txtPrecio.setText("");
-        txtProveedor.setText("");
         txtFactura.setText("");
-        comboProductos.setSelectedIndex(0);
+
+        if (comboProductos.getItemCount() > 0)
+            comboProductos.setSelectedIndex(0);
+
+        if (comboProveedores.getItemCount() > 0)
+            comboProveedores.setSelectedIndex(0);
     }
 }

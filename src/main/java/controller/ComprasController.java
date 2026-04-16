@@ -3,6 +3,8 @@ package controller;
 import model.Producto;
 import repository.ProductoRepository;
 import service.CompraService;
+import model.Proveedor;
+import repository.ProveedorRepository;
 
 import java.util.List;
 
@@ -14,14 +16,17 @@ import java.util.List;
  * - Proveer datos (productos)
  * - Ejecutar compras
  */
+
 public class ComprasController {
 
     private CompraService compraService;
     private ProductoRepository productoRepo;
+    private ProveedorRepository proveedorRepo;
 
     public ComprasController() {
         this.compraService = new CompraService();
         this.productoRepo = new ProductoRepository();
+        this.proveedorRepo = new ProveedorRepository();
     }
 
     /**
@@ -29,6 +34,13 @@ public class ComprasController {
      */
     public List<Producto> obtenerProductos() {
         return productoRepo.listarTodo();
+    }
+
+    /**
+     * Retorna lista de proveedores.
+     */
+    public List<Proveedor> obtenerProveedores() {
+        return proveedorRepo.listarTodos();
     }
 
     /**
