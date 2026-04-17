@@ -7,81 +7,36 @@ import repository.ProveedorRepository;
 /**
  * Servicio encargado de la lógica de negocio de proveedores.
  *
- * RESPONSABILIDADES:
- * ✔ Validar datos
- * ✔ Construir el modelo
- * ✔ Orquestar persistencia
- *
- * ❌ No accede directamente a la UI
- * ❌ No contiene SQL
- *
- * 🔥 Arquitectura:
- * Controller → Service → Repository
+ * - Recibe objetos (no 11 parámetros 😅)
+ * - Valida antes de persistir
+ * - Normaliza datos
  */
-
-
 public class ProveedorService {
-
-
 
     private ProveedorRepository proveedorRepo;
 
-
-
-    /**
-     * Constructor
-     */
     public ProveedorService() {
         this.proveedorRepo = new ProveedorRepository();
     }
 
-
-
     /**
-     * Registra un proveedor en el sistema.
-     *
-     * @return "OK" si todo es correcto o mensaje de error
+     * Guarda proveedor (VERSIÓN PRO)
      */
-    public String guardarProveedor(
-
-            String nombre,
-            String tipoId,
-            String numeroId,
-            String dv,
-            String direccion,
-            String ciudad,
-            String telefono,
-            String email,
-            String contacto,
-            String celular,
-            String emailContacto
-    ) {
+    public String guardarProveedor(Proveedor proveedor) {
 
         try {
+
+            System.out.println("📦 Iniciando guardado de proveedor...");
 
             // =========================
             // 🔹 1. VALIDACIONES
             // =========================
-            validarDatos(nombre, tipoId, numeroId, direccion, ciudad);
+            validarProveedor(proveedor);
 
             // =========================
-            // 🔹 2. CONSTRUIR MODELO
+            // 🔹 2. NORMALIZACIÓN
             // =========================
-
-            Proveedor proveedor = construirProveedor(
-                    nombre,
-                    tipoId,
-                    numeroId,
-                    dv,
-                    direccion,
-                    ciudad,
-                    telefono,
-                    email,
-                    contacto,
-                    celular,
-                    emailContacto
-            );
-
+            normalizarDatos(proveedor);
 
             // =========================
             // 🔹 3. PERSISTENCIA
@@ -100,74 +55,65 @@ public class ProveedorService {
     }
 
     // =========================
-    // MÉTODOS PRIVADOS
+    // VALIDACIONES PRO
     // =========================
 
-    /**
-     * Validaciones de negocio
-     */
-    private void validarDatos(
-            String nombre,
-            String tipoId,
-            String numeroId,
-            String direccion,
-            String ciudad
-    ) {
+    private void validarProveedor(Proveedor p) {
 
-        if (nombre == null || nombre.trim().isEmpty()) {
+        if (p == null) {
+            throw new BusinessException("Proveedor inválido.");
+        }
+
+        if (esVacio(p.getNombreRazonSocial())) {
             throw new BusinessException("El nombre o razón social es obligatorio.");
         }
 
-        if (tipoId == null || tipoId.trim().isEmpty()) {
+        if (esVacio(p.getTipoIdentificacion())) {
             throw new BusinessException("El tipo de identificación es obligatorio.");
         }
 
-        if (numeroId == null || numeroId.trim().isEmpty()) {
+        if (esVacio(p.getNumeroIdentificacion())) {
             throw new BusinessException("El número de identificación es obligatorio.");
         }
 
-        if (direccion == null || direccion.trim().isEmpty()) {
+        if (esVacio(p.getDireccion())) {
             throw new BusinessException("La dirección es obligatoria.");
         }
 
-        if (ciudad == null || ciudad.trim().isEmpty()) {
+        if (esVacio(p.getCiudad())) {
             throw new BusinessException("La ciudad es obligatoria.");
         }
     }
 
-    /**
-     * Construye el objeto Proveedor
-     */
-    private Proveedor construirProveedor(
-            String nombre,
-            String tipoId,
-            String numeroId,
-            String dv,
-            String direccion,
-            String ciudad,
-            String telefono,
-            String email,
-            String contacto,
-            String celular,
-            String emailContacto
-    ) {
+    // =========================
+    // NORMALIZACIÓN
+    // =========================
 
-        Proveedor p = new Proveedor();
+    private void normalizarDatos(Proveedor p) {
 
-        p.setNombreRazonSocial(nombre);
-        p.setTipoIdentificacion(tipoId);
-        p.setNumeroIdentificacion(numeroId);
-        p.setDv(dv == null ? "" : dv.trim());
+        // 🔹 DV → solo 1 carácter o null
+        if (p.getDv() != null) {
+            String dv = p.getDv().trim();
 
-        p.setDireccion(direccion);
-        p.setCiudad(ciudad);
-        p.setTelefono(telefono);
-        p.setEmail(email);
+            if (dv.isEmpty()) {
+                p.setDv(null);
+            } else if (dv.length() > 1) {
+                throw new BusinessException("El DV debe ser un solo dígito.");
+            } else {
+                p.setDv(dv);
+            }
+        }
 
-        p.setContactoNombre(contacto);
-        p.setContactoCelular(celular);
-        p.setContactoEmail(emailContacto);
+        // 🔹 Limpieza general
+        p.setNombreRazonSocial(p.getNombreRazonSocial().trim());
+        p.setNumeroIdentificacion(p.getNumeroIdentificacion().trim());
+    }
 
-        return p;
+    // =========================
+    // UTIL
+    // =========================
+
+    private boolean esVacio(String valor) {
+        return valor == null || valor.trim().isEmpty();
     }
 }

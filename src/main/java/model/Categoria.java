@@ -5,14 +5,14 @@ import exception.BusinessException;
 /**
  * Representa la entidad Categoria del sistema.
  *
- * Esta clase modela la tabla 'categorias' en la base de datos
- * y se utiliza para agrupar los productos (ej: Cámaras, DVRs, Sensores).
+ * Modela la tabla 'categorias' en la base de datos
+ * y se utiliza para agrupar los productos.
  *
  * Buenas prácticas aplicadas:
- * - Encapsulación (atributos privados)
- * - Validaciones alineadas con el dominio (BusinessException)
- * - Sobrescritura de toString() para UI (JComboBox)
- * - Implementación de equals y hashCode para uso en colecciones
+ * ✔ Encapsulación
+ * ✔ Validaciones de negocio
+ * ✔ toString optimizado para UI
+ * ✔ equals y hashCode para colecciones
  */
 public class Categoria {
 
@@ -22,8 +22,8 @@ public class Categoria {
     public Categoria() {}
 
     public Categoria(int id, String nombre) {
-        this.id = id;
-        this.nombre = nombre;
+        setId(id);
+        setNombre(nombre);
     }
 
     // =========================
@@ -43,29 +43,37 @@ public class Categoria {
     // =========================
 
     public void setId(int id) {
+        if (id < 0) {
+            throw new BusinessException("ID de categoría inválido.");
+        }
         this.id = id;
     }
 
     /**
      * Establece el nombre de la categoría.
-     * Validación alineada con reglas de negocio.
      */
     public void setNombre(String nombre) {
         if (nombre == null || nombre.trim().isEmpty()) {
             throw new BusinessException("El nombre de la categoría es obligatorio.");
         }
-        this.nombre = nombre;
+        this.nombre = nombre.trim();
     }
 
     // =========================
     // MÉTODOS
     // =========================
 
+    /**
+     * 🔥 Clave para que el JComboBox muestre bien el nombre
+     */
     @Override
     public String toString() {
-        return this.nombre;
+        return nombre != null ? nombre : "Sin nombre";
     }
 
+    /**
+     * 🔥 Igualdad por ID (clave primaria)
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

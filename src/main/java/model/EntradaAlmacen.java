@@ -1,179 +1,123 @@
 package model;
 
-import java.time.LocalDateTime;
 import exception.BusinessException;
 
+import java.sql.Timestamp;
+
 /**
- * Representa una entrada de inventario (compra o ingreso de productos).
+ * Entidad Entrada de Almacén.
  *
- * Esta clase modela la tabla 'entradas_inventario' en la base de datos.
- * Permite llevar trazabilidad de:
- * - Cantidades ingresadas
- * - Costos reales de compra
- * - Facturación
- * - Proveedores
+ * Representa el ingreso físico de productos al inventario,
+ * asociado a una orden de compra.
  *
- * 🔥 IMPORTANTE:
- * Esta entidad es la base para:
- * - Cálculo de costos promedio
- * - Históricos de compras
- * - Analítica (Power BI, BI, etc.)
- *
- * Buenas prácticas aplicadas:
- * - Validaciones en setters
- * - Uso de BusinessException
- * - Manejo de fecha y hora
- * - Preparado para escalabilidad
+ * 🔥 RESPONSABILIDAD:
+ * - Registrar lo que realmente llegó
+ * - Base para actualización de stock
+ * - Trazabilidad de costos
  */
 public class EntradaAlmacen {
 
-    /**
-     * ID del producto al que pertenece la entrada.
-     */
-    private int idProducto;
+    private int idEntrada;
+    private int idOrden;
+    private int idItem;
 
-    /**
-     * Cantidad de unidades ingresadas al inventario.
-     */
-    private int cantidad;
+    private int cantidadRecibida;
+    private double precioCompraUnitario;
 
-    /**
-     * Precio de compra por unidad.
-     */
-    private double precioCompra;
-
-    /**
-     * Número de factura asociado a la compra.
-     */
     private String numeroFactura;
-
-    /**
-     * Nombre del proveedor.
-     */
-    private String proveedor;
-
-    /**
-     * Fecha y hora de la entrada.
-     * Se asigna automáticamente al momento de crear el objeto.
-     */
-    private LocalDateTime fechaEntrada;
-
-    /**
-     * Constructor vacío.
-     */
-    public EntradaAlmacen() {
-        this.fechaEntrada = LocalDateTime.now(); // 🔥 se asigna automáticamente
-    }
+    private Timestamp fechaEntrada;
 
     // =========================
-    // ======= GETTERS =========
+    // GETTERS
     // =========================
 
-    public int getIdProducto() {
-        return idProducto;
+    public int getIdEntrada() {
+        return idEntrada;
     }
 
-    public int getCantidad() {
-        return cantidad;
+    public int getIdOrden() {
+        return idOrden;
     }
 
-    public double getPrecioCompra() {
-        return precioCompra;
+    public int getIdItem() {
+        return idItem;
+    }
+
+    public int getCantidadRecibida() {
+        return cantidadRecibida;
+    }
+
+    public double getPrecioCompraUnitario() {
+        return precioCompraUnitario;
     }
 
     public String getNumeroFactura() {
         return numeroFactura;
     }
 
-    public String getProveedor() {
-        return proveedor;
-    }
-
-    public LocalDateTime getFechaEntrada() {
+    public Timestamp getFechaEntrada() {
         return fechaEntrada;
     }
 
     // =========================
-    // ======= SETTERS =========
+    // SETTERS CON VALIDACIÓN
     // =========================
 
-    /**
-     * Establece el producto asociado.
-     */
-    public void setIdProducto(int idProducto) {
-        if (idProducto <= 0) {
+    public void setIdEntrada(int idEntrada) {
+        this.idEntrada = idEntrada;
+    }
+
+    public void setIdOrden(int idOrden) {
+        if (idOrden <= 0) {
+            throw new BusinessException("La orden es obligatoria.");
+        }
+        this.idOrden = idOrden;
+    }
+
+    public void setIdItem(int idItem) {
+        if (idItem <= 0) {
             throw new BusinessException("El producto es obligatorio.");
         }
-        this.idProducto = idProducto;
+        this.idItem = idItem;
     }
 
-    /**
-     * Establece la cantidad ingresada.
-     */
-    public void setCantidad(int cantidad) {
-        if (cantidad <= 0) {
+    public void setCantidadRecibida(int cantidadRecibida) {
+        if (cantidadRecibida <= 0) {
             throw new BusinessException("La cantidad debe ser mayor a cero.");
         }
-        this.cantidad = cantidad;
+        this.cantidadRecibida = cantidadRecibida;
     }
 
-    /**
-     * Establece el precio de compra.
-     */
-    public void setPrecioCompra(double precioCompra) {
-        if (precioCompra <= 0) {
+    public void setPrecioCompraUnitario(double precioCompraUnitario) {
+        if (precioCompraUnitario <= 0) {
             throw new BusinessException("El precio debe ser mayor a cero.");
         }
-        this.precioCompra = precioCompra;
+        this.precioCompraUnitario = precioCompraUnitario;
     }
 
-    /**
-     * Establece el número de factura.
-     */
     public void setNumeroFactura(String numeroFactura) {
         if (numeroFactura == null || numeroFactura.trim().isEmpty()) {
-            throw new BusinessException("El número de factura es obligatorio.");
+            throw new BusinessException("La factura es obligatoria.");
         }
         this.numeroFactura = numeroFactura;
     }
 
-    /**
-     * Establece el proveedor.
-     */
-    public void setProveedor(String proveedor) {
-        if (proveedor == null || proveedor.trim().isEmpty()) {
-            throw new BusinessException("El proveedor es obligatorio.");
-        }
-        this.proveedor = proveedor;
-    }
-
-    /**
-     * Permite establecer manualmente la fecha (opcional).
-     */
-    public void setFechaEntrada(LocalDateTime fechaEntrada) {
+    public void setFechaEntrada(Timestamp fechaEntrada) {
         this.fechaEntrada = fechaEntrada;
     }
 
     // =========================
-    // ======= MÉTODOS =========
+    // MÉTODOS
     // =========================
 
-    /**
-     * Calcula el costo total de la entrada.
-     *
-     * @return cantidad * precioCompra
-     */
-    public double calcularTotalCompra() {
-        return cantidad * precioCompra;
+    public double calcularTotal() {
+        return cantidadRecibida * precioCompraUnitario;
     }
 
-    /**
-     * Representación en texto del movimiento.
-     */
     @Override
     public String toString() {
-        return "Entrada #" + numeroFactura +
-                " | Producto ID: " + idProducto +
-                " | Cantidad: " + cantidad;
+        return "Entrada Orden #" + idOrden +
+                " | Item: " + idItem +
+                " | Cantidad: " + cantidadRecibida;
     }
 }

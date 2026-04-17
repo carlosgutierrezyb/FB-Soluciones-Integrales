@@ -86,7 +86,7 @@ public class ProductoRepository {
     // CONSULTAS
     // =========================
 
-    public List<Producto> listarTodo() {
+    public List<Producto> listarTodos() {
 
         List<Producto> lista = new ArrayList<>();
 

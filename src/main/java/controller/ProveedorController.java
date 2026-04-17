@@ -1,44 +1,25 @@
 package controller;
 
+import model.Proveedor;
 import service.ProveedorService;
 
 /**
  * Controlador del módulo de proveedores.
  *
- * RESPONSABILIDADES:
- * ✔ Recibir datos desde la vista
- * ✔ Delegar lógica al Service
- * ✔ No contiene lógica de negocio
- *
- * 🔥 Arquitectura:
- * View → Controller → Service → Repository
+ * 🔥 NIVEL PRO:
+ * - Construye el objeto Proveedor
+ * - Delega al Service
  */
 public class ProveedorController {
 
     private ProveedorService proveedorService;
 
-    /**
-     * Constructor: inicializa el servicio.
-     */
     public ProveedorController() {
         this.proveedorService = new ProveedorService();
     }
 
     /**
-     * Registra un nuevo proveedor en el sistema.
-     *
-     * @param nombre nombre o razón social
-     * @param tipoId tipo de identificación (NIT, CC, etc.)
-     * @param numeroId número de identificación
-     * @param dv dígito de verificación (opcional)
-     * @param direccion dirección
-     * @param ciudad ciudad
-     * @param telefono teléfono
-     * @param email email
-     * @param contacto persona de contacto
-     * @param celular celular del contacto
-     * @param emailContacto email del contacto
-     * @return "OK" si todo sale bien o mensaje de error
+     * Registra proveedor
      */
     public String guardarProveedor(
             String nombre,
@@ -54,18 +35,37 @@ public class ProveedorController {
             String emailContacto
     ) {
 
-        return proveedorService.guardarProveedor(
-                nombre,
-                tipoId,
-                numeroId,
-                dv,
-                direccion,
-                ciudad,
-                telefono,
-                email,
-                contacto,
-                celular,
-                emailContacto
-        );
+        try {
+
+            System.out.println("🎯 Controller: construyendo proveedor...");
+
+            // =========================
+            // 🔹 CONSTRUIR OBJETO
+            // =========================
+            Proveedor p = new Proveedor();
+
+            p.setNombreRazonSocial(nombre);
+            p.setTipoIdentificacion(tipoId);
+            p.setNumeroIdentificacion(numeroId);
+            p.setDv(dv);
+
+            p.setDireccion(direccion);
+            p.setCiudad(ciudad);
+            p.setTelefono(telefono);
+            p.setEmail(email);
+
+            p.setContactoNombre(contacto);
+            p.setContactoCelular(celular);
+            p.setContactoEmail(emailContacto);
+
+            // =========================
+            // 🔹 ENVIAR AL SERVICE
+            // =========================
+            return proveedorService.guardarProveedor(p);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error en el controlador.";
+        }
     }
 }

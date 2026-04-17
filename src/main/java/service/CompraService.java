@@ -1,83 +1,102 @@
 package service;
 
 import exception.BusinessException;
-import model.EntradaAlmacen;
-import repository.CompraRepository;
-import repository.ProductoRepository;
+import model.DetalleOrdenCompra;
+import model.OrdenCompra;
+import repository.DetalleOrdenCompraRepository;
+import repository.OrdenCompraRepository;
 import util.DatabaseConnection;
-import util.ParseUtil;
 
 import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
 
 /**
- * Servicio de compras con manejo de transacciones reales.
+ * Servicio de compras (nivel ERP).
  *
- * 🔥 RESPONSABILIDAD CRÍTICA:
- * - Garantizar consistencia de datos
- * - Manejar transacciones (commit / rollback)
+ * 🔥 RESPONSABILIDAD:
+ * - Crear orden de compra (pedido al proveedor)
+ * - Registrar múltiples productos (detalle)
+ * - Manejar transacciones
+ *
+ * ❌ NO maneja entradas de almacén (eso va en otro flujo)
  */
 public class CompraService {
 
-    private CompraRepository compraRepo;
-    private ProductoRepository productoRepo;
+    private OrdenCompraRepository ordenRepo;
+    private DetalleOrdenCompraRepository detalleRepo;
 
     public CompraService() {
-        this.compraRepo = new CompraRepository();
-        this.productoRepo = new ProductoRepository();
+        this.ordenRepo = new OrdenCompraRepository();
+        this.detalleRepo = new DetalleOrdenCompraRepository();
     }
 
     /**
-     * Registra una compra y actualiza stock en una sola transacción.
+     * 🔥 CREAR ORDEN DE COMPRA (PRO ERP)
      */
-    public String registrarCompra(int idProducto, String cantStr, String precioStr, String proveedor, String factura) {
+    public String crearOrdenCompra(
+            int idProveedor,
+            List<DetalleOrdenCompra> detalles
+    ) {
 
         Connection conn = null;
 
         try {
-            // =========================
-            // 🔹 1. CONVERSIÓN
-            // =========================
-            int cantidad = ParseUtil.toPositiveInt(cantStr, "Cantidad");
-            double precio = ParseUtil.toPositiveDouble(precioStr, "Precio");
 
             // =========================
-            // 🔹 2. VALIDACIONES
+            // 🔹 1. VALIDACIONES
             // =========================
-            validarDatos(idProducto, factura, proveedor);
+            if (idProveedor <= 0) {
+                throw new BusinessException("Proveedor inválido.");
+            }
+
+            if (detalles == null || detalles.isEmpty()) {
+                throw new BusinessException("Debe agregar al menos un producto.");
+            }
 
             // =========================
-            // 🔹 3. CREAR MODELO
-            // =========================
-            EntradaAlmacen entrada = construirEntrada(idProducto, cantidad, precio, factura, proveedor);
-
-            // =========================
-            // 🔥 4. INICIAR TRANSACCIÓN
+            // 🔹 2. INICIAR TRANSACCIÓN
             // =========================
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false);
 
-            // =========================
-            // 🔹 5. INSERT COMPRA
-            // =========================
-            boolean compraOk = compraRepo.registrarEntrada(conn, entrada);
+            System.out.println("🚀 Iniciando creación de orden de compra...");
 
-            if (!compraOk) {
-                throw new RuntimeException("Error al registrar la compra");
+            // =========================
+            // 🔹 3. CREAR ORDEN
+            // =========================
+            OrdenCompra orden = new OrdenCompra();
+            orden.setIdProveedor(idProveedor);
+            orden.setEstado("Pendiente");
+
+            int idOrden = ordenRepo.crear(orden);
+
+            if (idOrden <= 0) {
+                throw new SQLException("No se pudo crear la orden.");
             }
 
             // =========================
-            // 🔹 6. ACTUALIZAR STOCK (MISMA CONEXIÓN 🔥)
+            // 🔹 4. ASIGNAR ORDEN A DETALLES
             // =========================
-            boolean stockOk = productoRepo.actualizarStock(conn, idProducto, cantidad);
-
-            if (!stockOk) {
-                throw new RuntimeException("Error al actualizar stock");
+            for (DetalleOrdenCompra d : detalles) {
+                d.setIdOrden(idOrden);
             }
 
             // =========================
-            // 🔥 7. COMMIT
+            // 🔹 5. INSERTAR DETALLE (BATCH)
+            // =========================
+            boolean detallesOK = detalleRepo.insertarLista(detalles, conn);
+
+            if (!detallesOK) {
+                throw new SQLException("Error insertando detalle de orden.");
+            }
+
+            // =========================
+            // 🔹 6. COMMIT
             // =========================
             conn.commit();
+
+            System.out.println("✅ Orden de compra creada correctamente.");
 
             return "OK";
 
@@ -88,9 +107,9 @@ public class CompraService {
 
         } catch (Exception e) {
 
-            rollback(conn);
             e.printStackTrace();
-            return "Error interno del sistema.";
+            rollback(conn);
+            return "Error interno creando la orden.";
 
         } finally {
 
@@ -99,43 +118,16 @@ public class CompraService {
     }
 
     // =========================
-    // MÉTODOS AUXILIARES
+    // 🔧 MÉTODOS AUXILIARES
     // =========================
-
-    private void validarDatos(int idProducto, String factura, String proveedor) {
-
-        if (idProducto <= 0) {
-            throw new BusinessException("El producto es obligatorio.");
-        }
-
-        if (factura == null || factura.trim().isEmpty()) {
-            throw new BusinessException("La factura es obligatoria.");
-        }
-
-        if (proveedor == null || proveedor.trim().isEmpty()) {
-            throw new BusinessException("El proveedor es obligatorio.");
-        }
-    }
-
-    private EntradaAlmacen construirEntrada(int idProducto, int cantidad, double precio, String factura, String proveedor) {
-
-        EntradaAlmacen entrada = new EntradaAlmacen();
-        entrada.setIdProducto(idProducto);
-        entrada.setCantidad(cantidad);
-        entrada.setPrecioCompra(precio);
-        entrada.setNumeroFactura(factura);
-        entrada.setProveedor(proveedor);
-
-        return entrada;
-    }
 
     private void rollback(Connection conn) {
         try {
             if (conn != null) {
                 conn.rollback();
-                System.out.println("↩️ Rollback ejecutado");
+                System.out.println("⚠️ Rollback ejecutado.");
             }
-        } catch (Exception ex) {
+        } catch (SQLException ex) {
             ex.printStackTrace();
         }
     }
@@ -146,7 +138,7 @@ public class CompraService {
                 conn.setAutoCommit(true);
                 conn.close();
             }
-        } catch (Exception ex) {
+        } catch (SQLException ex) {
             ex.printStackTrace();
         }
     }

@@ -9,14 +9,6 @@ import util.ParseUtil;
 
 import java.util.List;
 
-/**
- * Servicio encargado de la lógica de negocio relacionada con productos.
- *
- * RESPONSABILIDADES:
- * - Validaciones de negocio
- * - Construcción de entidades
- * - Orquestación con repositorios
- */
 public class ProductoService {
 
     private ProductoRepository productoRepo;
@@ -74,10 +66,6 @@ public class ProductoService {
             int idCategoria = ParseUtil.toInt(idCatStr, "Categoría");
             int stockMinimo = ParseUtil.toPositiveInt(stockMinStr, "Stock mínimo");
 
-            if (stockMinimo < 0) {
-                throw new BusinessException("El stock mínimo no puede ser negativo.");
-            }
-
             Producto p = new Producto();
             p.setId(id);
             p.setNombre(nombre);
@@ -114,7 +102,7 @@ public class ProductoService {
     // =========================
 
     public List<Producto> listarProductos() {
-        return productoRepo.listarTodo();
+        return productoRepo.listarTodos(); // 🔥 corregido
     }
 
     // =========================
@@ -123,6 +111,23 @@ public class ProductoService {
 
     public List<Categoria> listarCategorias() {
         return categoriaRepo.listarCategorias();
+    }
+
+    // =========================
+    // 🔥 INVENTARIO (CLAVE ERP)
+    // =========================
+
+    public void aumentarStock(int idProducto, int cantidad) {
+
+        if (idProducto <= 0) {
+            throw new BusinessException("Producto inválido.");
+        }
+
+        if (cantidad <= 0) {
+            throw new BusinessException("Cantidad inválida.");
+        }
+
+        productoRepo.aumentarStock(idProducto, cantidad);
     }
 
     // =========================
@@ -181,7 +186,10 @@ public class ProductoService {
         Producto p = new Producto();
         p.setCodigoReferencia(codigo);
         p.setNombre(nombre);
+
+        // 🔥 IMPORTANTE: esto luego lo manejará el inventario automático
         p.setStockActual(stock);
+
         p.setIdCategoria(idCategoria);
         p.setStockMinimo(stockMinimo);
         p.setDescripcion("Referencia General");
