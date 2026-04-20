@@ -25,6 +25,11 @@ public class OrdenCompra {
         return idOrden;
     }
 
+    // 🔥 COMPATIBILIDAD CON UI (JComboBox, tablas, etc.)
+    public int getId() {
+        return idOrden;
+    }
+
     public int getIdProveedor() {
         return idProveedor;
     }
@@ -58,11 +63,10 @@ public class OrdenCompra {
             throw new BusinessException("El estado es obligatorio.");
         }
 
-        // Validación tipo ENUM lógica
         switch (estado) {
             case "Pendiente":
-            case "Recibido":
             case "Parcial":
+            case "Recibido":
             case "Cancelado":
                 this.estado = estado;
                 break;
@@ -73,5 +77,32 @@ public class OrdenCompra {
 
     public void setFechaPedido(Timestamp fechaPedido) {
         this.fechaPedido = fechaPedido;
+    }
+
+    // =========================
+    // UI / DEBUG
+    // =========================
+
+    @Override
+    public String toString() {
+        return "Orden #" + idOrden + " - " + estado;
+    }
+
+    // =========================
+    // EQUALS / HASHCODE
+    // =========================
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof OrdenCompra)) return false;
+
+        OrdenCompra that = (OrdenCompra) o;
+        return idOrden == that.idOrden;
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(idOrden);
     }
 }
