@@ -22,10 +22,15 @@ public class ProductoService {
     // =========================
     // CREAR PRODUCTO
     // =========================
-
-    public String agregarProducto(String nombre, String stockStr, String idCatStr, String stockMinStr) {
+    public String agregarProducto(
+            String nombre,
+            String stockStr,
+            String idCatStr,
+            String stockMinStr
+    ) {
 
         try {
+
             validarNombre(nombre);
 
             int stock = ParseUtil.toPositiveInt(stockStr, "Stock");
@@ -36,11 +41,21 @@ public class ProductoService {
 
             String codigo = generarCodigoProducto(idCategoria);
 
-            Producto producto = construirProducto(nombre, stock, idCategoria, stockMinimo, codigo);
+            Producto producto = construirProducto(
+                    nombre,
+                    stock,
+                    idCategoria,
+                    stockMinimo,
+                    codigo
+            );
 
             boolean guardado = productoRepo.guardar(producto);
 
-            return guardado ? "OK" : "Error al guardar en la base de datos.";
+            if (!guardado) {
+                throw new BusinessException("No se pudo guardar el producto.");
+            }
+
+            return "OK";
 
         } catch (BusinessException e) {
             return e.getMessage();
@@ -53,10 +68,15 @@ public class ProductoService {
     // =========================
     // EDITAR PRODUCTO
     // =========================
-
-    public String editarProducto(int id, String nombre, String idCatStr, String stockMinStr) {
+    public String editarProducto(
+            int id,
+            String nombre,
+            String idCatStr,
+            String stockMinStr
+    ) {
 
         try {
+
             validarNombre(nombre);
 
             if (id <= 0) {
@@ -87,7 +107,6 @@ public class ProductoService {
     // =========================
     // ELIMINAR PRODUCTO
     // =========================
-
     public boolean eliminarProducto(int id) {
 
         if (id <= 0) {
@@ -100,23 +119,20 @@ public class ProductoService {
     // =========================
     // LISTAR PRODUCTOS
     // =========================
-
     public List<Producto> listarProductos() {
-        return productoRepo.listarTodos(); // 🔥 corregido
+        return productoRepo.listarTodos();
     }
 
     // =========================
     // LISTAR CATEGORÍAS
     // =========================
-
     public List<Categoria> listarCategorias() {
         return categoriaRepo.listarCategorias();
     }
 
     // =========================
-    // 🔥 INVENTARIO (CLAVE ERP)
+    // 🔥 INVENTARIO (ERP CORE)
     // =========================
-
     public void aumentarStock(int idProducto, int cantidad) {
 
         if (idProducto <= 0) {
@@ -127,14 +143,18 @@ public class ProductoService {
             throw new BusinessException("Cantidad inválida.");
         }
 
-        productoRepo.aumentarStock(idProducto, cantidad);
+        boolean ok = productoRepo.aumentarStock(idProducto, cantidad);
+
+        if (!ok) {
+            throw new BusinessException("No se pudo actualizar el stock.");
+        }
     }
 
     // =========================
     // VALIDACIONES
     // =========================
-
     private void validarNombre(String nombre) {
+
         if (nombre == null || nombre.trim().isEmpty()) {
             throw new BusinessException("El nombre es obligatorio.");
         }
@@ -151,17 +171,19 @@ public class ProductoService {
         }
 
         if (stockMinimo > stock) {
-            throw new BusinessException("El stock mínimo no puede ser mayor al stock actual.");
+            throw new BusinessException(
+                    "El stock mínimo no puede ser mayor al stock actual."
+            );
         }
     }
 
     // =========================
     // LÓGICA DE NEGOCIO
     // =========================
-
     private String generarCodigoProducto(int idCategoria) {
 
-        String ultimoCodigo = productoRepo.obtenerUltimoCodigoPorCategoria(idCategoria);
+        String ultimoCodigo =
+                productoRepo.obtenerUltimoCodigoPorCategoria(idCategoria);
 
         int nuevoCorrelativo = 1;
 
@@ -171,7 +193,7 @@ public class ProductoService {
                 int ultimoNumero = Integer.parseInt(partes[1]);
                 nuevoCorrelativo = ultimoNumero + 1;
             } catch (Exception e) {
-                throw new BusinessException("Error generando el código del producto.");
+                throw new BusinessException("Error generando código.");
             }
         }
 
@@ -181,13 +203,19 @@ public class ProductoService {
         return prefijo + "-" + correlativo;
     }
 
-    private Producto construirProducto(String nombre, int stock, int idCategoria, int stockMinimo, String codigo) {
+    private Producto construirProducto(
+            String nombre,
+            int stock,
+            int idCategoria,
+            int stockMinimo,
+            String codigo
+    ) {
 
         Producto p = new Producto();
         p.setCodigoReferencia(codigo);
         p.setNombre(nombre);
 
-        // 🔥 IMPORTANTE: esto luego lo manejará el inventario automático
+        // 🔥 INVENTARIO INICIAL
         p.setStockActual(stock);
 
         p.setIdCategoria(idCategoria);

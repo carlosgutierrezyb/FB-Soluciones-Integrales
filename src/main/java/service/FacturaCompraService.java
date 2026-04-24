@@ -2,25 +2,46 @@ package service;
 
 import exception.BusinessException;
 import model.FacturaCompra;
+import repository.EntradaAlmacenRepository;
 import repository.FacturaCompraRepository;
+import repository.OrdenCompraRepository;
 import util.DatabaseConnection;
 
 import java.sql.Connection;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
+/**
+ * Servicio de Factura de Compra
+ *
+ * 🔥 ERP PRO REAL:
+ * - múltiples facturas por una OC
+ * - múltiples entradas por factura
+ * - usa detalle_factura_compra
+ * - NO usa id_factura en entradas_almacen
+ */
 public class FacturaCompraService {
 
     private FacturaCompraRepository facturaRepo;
+    private EntradaAlmacenRepository entradaRepo;
+    private OrdenCompraRepository ordenRepo;
 
     public FacturaCompraService() {
         this.facturaRepo = new FacturaCompraRepository();
+        this.entradaRepo = new EntradaAlmacenRepository();
+        this.ordenRepo = new OrdenCompraRepository();
     }
 
     // =========================
     // 🔥 REGISTRAR FACTURA
     // =========================
-    public String registrarFactura(int idOrden, String numeroFactura, String fechaStr) {
+    public String registrarFactura(
+            int idProveedor,
+            int idOrden,
+            String numeroFactura,
+            String fechaStr
+    ) {
 
         Connection conn = null;
 
@@ -29,6 +50,10 @@ public class FacturaCompraService {
             // =========================
             // 🔹 VALIDACIONES
             // =========================
+            if (idProveedor <= 0) {
+                throw new BusinessException("Proveedor inválido.");
+            }
+
             if (idOrden <= 0) {
                 throw new BusinessException("Orden inválida.");
             }
@@ -42,6 +67,7 @@ public class FacturaCompraService {
             }
 
             LocalDate fecha;
+
             try {
                 fecha = LocalDate.parse(fechaStr);
             } catch (Exception e) {
@@ -57,42 +83,93 @@ public class FacturaCompraService {
             System.out.println("📄 Registrando factura de compra...");
 
             // =========================
-            // 🔹 VALIDAR ENTRADAS DISPONIBLES
+            // 🔹 VALIDAR ENTRADAS PENDIENTES
             // =========================
-            boolean hayEntradas = facturaRepo.existenEntradasSinFactura(conn, idOrden);
+            boolean hayPendientes =
+                    facturaRepo.existenEntradasPendientes(conn, idOrden);
 
-            if (!hayEntradas) {
-                throw new BusinessException("No hay entradas pendientes por facturar.");
+            if (!hayPendientes) {
+                throw new BusinessException(
+                        "No existen entradas pendientes por facturar."
+                );
             }
 
             // =========================
-            // 🔹 CREAR FACTURA
+            // 🔹 CREAR FACTURA (ENCABEZADO)
             // =========================
             FacturaCompra factura = new FacturaCompra();
-            factura.setIdOrden(idOrden);
+
+            factura.setIdProveedor(idProveedor);
             factura.setNumeroFactura(numeroFactura);
-            factura.setFecha(LocalDateTime.now()); // o usar fecha convertida
+            factura.setFecha(fecha.atStartOfDay());
             factura.setEstado("Registrada");
+            factura.setObservacion("Factura registrada desde módulo compras");
 
             int idFactura = facturaRepo.crear(conn, factura);
 
             if (idFactura <= 0) {
-                throw new BusinessException("No se pudo crear la factura.");
+                throw new BusinessException(
+                        "No se pudo crear la factura."
+                );
             }
 
             // =========================
-            // 🔹 ASOCIAR ENTRADAS
+            // 🔹 OBTENER ENTRADAS PENDIENTES
             // =========================
-            boolean asociado = facturaRepo.asociarEntradas(conn, idFactura, idOrden);
+            List<Integer> entradasPendientes =
+                    facturaRepo.obtenerEntradasPendientes(conn, idOrden);
 
-            if (!asociado) {
-                throw new BusinessException("No se pudieron asociar las entradas.");
+            if (entradasPendientes.isEmpty()) {
+                throw new BusinessException(
+                        "No hay entradas disponibles para facturar."
+                );
             }
+
+            // =========================
+            // 🔹 CREAR DETALLE FACTURA
+            // =========================
+            for (Integer idEntrada : entradasPendientes) {
+
+                int idItem =
+                        entradaRepo.obtenerIdItemPorEntrada(idEntrada);
+
+                int cantidad =
+                        entradaRepo.obtenerCantidadPorEntrada(idEntrada);
+
+                double precio =
+                        entradaRepo.obtenerPrecioCompraPorEntrada(idEntrada);
+
+                boolean ok = facturaRepo.crearDetalleFactura(
+                        conn,
+                        idFactura,
+                        idEntrada,
+                        idItem,
+                        cantidad,
+                        precio
+                );
+
+                if (!ok) {
+                    throw new BusinessException(
+                            "Error creando detalle de factura."
+                    );
+                }
+            }
+
+            // =========================
+            // 🔹 ACTUALIZAR ESTADO ORDEN
+            // =========================
+            ordenRepo.actualizarEstado(
+                    conn,
+                    idOrden,
+                    "Recibido"
+            );
 
             // =========================
             // 🔹 COMMIT
             // =========================
             conn.commit();
+
+            System.out.println("✅ Factura registrada correctamente.");
 
             return "OK";
 

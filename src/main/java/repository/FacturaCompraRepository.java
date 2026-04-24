@@ -3,31 +3,40 @@ package repository;
 import model.FacturaCompra;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Repository de factura de compra.
  *
- * 🔥 ERP REAL:
+ * 🔥 ERP PRO REAL:
  * - Maneja encabezado de factura
- * - Relaciona con orden de compra
- * - Permite validar entradas pendientes
+ * - NO usa id_factura en entradas_almacen
+ * - Usa detalle_factura_compra
+ * - Permite múltiples facturas por OC
+ * - Permite múltiples entradas por factura
  */
 public class FacturaCompraRepository {
 
     // =========================
-    // 🔹 CREAR FACTURA
+    // 🔹 CREAR FACTURA (ENCABEZADO)
     // =========================
     public int crear(Connection conn, FacturaCompra factura) throws SQLException {
 
-        String sql = "INSERT INTO factura_compra (id_orden, numero_factura, fecha, estado) " +
-                "VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO factura_compra " +
+                "(id_proveedor, numero_factura, fecha, estado, observacion) " +
+                "VALUES (?, ?, ?, ?, ?)";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+        try (PreparedStatement ps = conn.prepareStatement(
+                sql,
+                Statement.RETURN_GENERATED_KEYS
+        )) {
 
-            ps.setInt(1, factura.getIdOrden()); // 🔥 CAMBIO CLAVE
+            ps.setInt(1, factura.getIdProveedor());
             ps.setString(2, factura.getNumeroFactura());
             ps.setTimestamp(3, Timestamp.valueOf(factura.getFecha()));
             ps.setString(4, factura.getEstado());
+            ps.setString(5, factura.getObservacion());
 
             int filas = ps.executeUpdate();
 
@@ -48,46 +57,69 @@ public class FacturaCompraRepository {
     }
 
     // =========================
-    // 🔹 VALIDAR ENTRADAS SIN FACTURA
+    // 🔹 OBTENER ENTRADAS PENDIENTES DE FACTURAR
     // =========================
-    public boolean existenEntradasSinFactura(Connection conn, int idOrden) throws SQLException {
+    public List<Integer> obtenerEntradasPendientes(Connection conn, int idOrden) throws SQLException {
 
-        String sql = "SELECT COUNT(*) AS total " +
-                "FROM entradas_almacen " +
-                "WHERE id_orden = ? AND id_factura IS NULL";
+        List<Integer> lista = new ArrayList<>();
+
+        String sql = "SELECT ea.id_entrada " +
+                "FROM entradas_almacen ea " +
+                "LEFT JOIN detalle_factura_compra dfc " +
+                "ON ea.id_entrada = dfc.id_entrada " +
+                "WHERE ea.id_orden = ? " +
+                "AND dfc.id_entrada IS NULL";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, idOrden);
 
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    int total = rs.getInt("total");
-                    return total > 0;
+
+                while (rs.next()) {
+                    lista.add(rs.getInt("id_entrada"));
                 }
             }
         }
 
-        return false;
+        return lista;
     }
 
     // =========================
-    // 🔹 ASOCIAR ENTRADAS A FACTURA
+    // 🔹 VALIDAR SI EXISTEN ENTRADAS PENDIENTES
     // =========================
-    public boolean asociarEntradas(Connection conn, int idFactura, int idOrden) throws SQLException {
+    public boolean existenEntradasPendientes(Connection conn, int idOrden) throws SQLException {
 
-        String sql = "UPDATE entradas_almacen " +
-                "SET id_factura = ? " +
-                "WHERE id_orden = ? AND id_factura IS NULL";
+        List<Integer> pendientes = obtenerEntradasPendientes(conn, idOrden);
+        return !pendientes.isEmpty();
+    }
+
+    // =========================
+    // 🔹 CREAR DETALLE FACTURA
+    // =========================
+    public boolean crearDetalleFactura(
+            Connection conn,
+            int idFactura,
+            int idEntrada,
+            int idItem,
+            int cantidadFacturada,
+            double precioUnitario
+    ) throws SQLException {
+
+        String sql = "INSERT INTO detalle_factura_compra " +
+                "(id_factura, id_entrada, id_item, cantidad_facturada, precio_unitario_factura, observacion) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, idFactura);
-            ps.setInt(2, idOrden);
+            ps.setInt(2, idEntrada);
+            ps.setInt(3, idItem);
+            ps.setInt(4, cantidadFacturada);
+            ps.setDouble(5, precioUnitario);
+            ps.setString(6, "Registro automático desde factura");
 
             int filas = ps.executeUpdate();
-
-            System.out.println("📄 Entradas asociadas a factura: " + filas);
 
             return filas > 0;
         }

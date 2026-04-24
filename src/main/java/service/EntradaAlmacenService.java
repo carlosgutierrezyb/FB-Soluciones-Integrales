@@ -14,6 +14,16 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 
+/**
+ * Service de entradas de almacén.
+ *
+ * 🔥 ERP PRO:
+ * - Permite múltiples entregas por una misma OC
+ * - Controla recepción parcial / total
+ * - Actualiza inventario
+ * - Actualiza estado de la orden
+ * - Prepara información para facturación posterior
+ */
 public class EntradaAlmacenService {
 
     private OrdenCompraRepository ordenRepo;
@@ -27,10 +37,17 @@ public class EntradaAlmacenService {
     }
 
     // =========================
-    // 🔹 ÓRDENES PENDIENTES
+    // 🔹 ÓRDENES CON RECEPCIÓN PENDIENTE
     // =========================
     public List<OrdenCompra> obtenerOrdenesPendientes() {
         return ordenRepo.listarPendientes();
+    }
+
+    // =========================
+    // 🔹 ÓRDENES CON ENTRADAS PENDIENTES DE FACTURA
+    // =========================
+    public List<OrdenCompra> obtenerOrdenesPendientesFacturacion() {
+        return ordenRepo.obtenerOrdenesParaFacturaCompra();
     }
 
     // =========================
@@ -41,7 +58,7 @@ public class EntradaAlmacenService {
     }
 
     // =========================
-    // 🔹 CANTIDAD RECIBIDA
+    // 🔹 TOTAL RECIBIDO
     // =========================
     public int obtenerCantidadRecibida(int idItem, int idOrden) {
         return entradaRepo.obtenerCantidadRecibida(idItem, idOrden);
@@ -50,7 +67,13 @@ public class EntradaAlmacenService {
     // =========================
     // 🔹 REGISTRAR ENTRADA
     // =========================
-    public String registrarEntrada(int idOrden, int idItem, int cantidad) {
+    public String registrarEntrada(
+            int idOrden,
+            int idItem,
+            int cantidad,
+            double precioCompra,
+            String numeroFactura
+    ) {
 
         Connection conn = null;
 
@@ -71,18 +94,28 @@ public class EntradaAlmacenService {
                 throw new BusinessException("Cantidad inválida.");
             }
 
-            int recibido = obtenerCantidadRecibida(idItem, idOrden);
-
-            DetalleOrdenCompra detalle = detalleRepo.obtenerPorOrdenYItem(idOrden, idItem);
-
-            if (detalle == null) {
-                throw new BusinessException("El producto no pertenece a la orden.");
+            if (precioCompra < 0) {
+                throw new BusinessException("Precio de compra inválido.");
             }
 
-            int pendiente = detalle.getCantidadPedida() - recibido;
+            int recibido = obtenerCantidadRecibida(idItem, idOrden);
+
+            DetalleOrdenCompra detalle =
+                    detalleRepo.obtenerPorOrdenYItem(idOrden, idItem);
+
+            if (detalle == null) {
+                throw new BusinessException(
+                        "El producto no pertenece a la orden."
+                );
+            }
+
+            int pendiente =
+                    detalle.getCantidadPedida() - recibido;
 
             if (cantidad > pendiente) {
-                throw new BusinessException("No puede ingresar más de lo pendiente.");
+                throw new BusinessException(
+                        "No puede ingresar más de lo pendiente."
+                );
             }
 
             // =========================
@@ -91,28 +124,38 @@ public class EntradaAlmacenService {
             conn = DatabaseConnection.getConnection();
             conn.setAutoCommit(false);
 
-            System.out.println("📦 Registrando entrada...");
+            System.out.println("📦 Registrando entrada de almacén...");
 
             EntradaAlmacen entrada = new EntradaAlmacen();
+
             entrada.setIdOrden(idOrden);
             entrada.setIdItem(idItem);
             entrada.setCantidadRecibida(cantidad);
+            entrada.setPrecioCompraUnitario(precioCompra);
+            entrada.setNumeroFactura(numeroFactura);
+            entrada.setFechaEntrada(
+                    new Timestamp(System.currentTimeMillis())
+            );
 
-            // 🔥 CORREGIDO
-            entrada.setFechaEntrada(new Timestamp(System.currentTimeMillis()));
-
-            boolean guardado = entradaRepo.guardar(conn, entrada);
+            boolean guardado =
+                    entradaRepo.guardar(conn, entrada);
 
             if (!guardado) {
-                throw new SQLException("Error guardando entrada.");
+                throw new SQLException(
+                        "No se pudo registrar la entrada."
+                );
             }
 
             // =========================
-            // 🔥 ACTUALIZAR ESTADO
+            // 🔥 ACTUALIZAR ESTADO OC
             // =========================
             actualizarEstadoOrden(conn, idOrden);
 
             conn.commit();
+
+            System.out.println(
+                    "✅ Entrada registrada correctamente."
+            );
 
             return "OK";
 
@@ -133,54 +176,96 @@ public class EntradaAlmacenService {
     }
 
     // =========================
-    // 🔥 ESTADO DE ORDEN
+    // 🔥 ACTUALIZAR ESTADO ORDEN
     // =========================
-    private void actualizarEstadoOrden(Connection conn, int idOrden) throws SQLException {
+    private void actualizarEstadoOrden(
+            Connection conn,
+            int idOrden
+    ) throws SQLException {
 
-        List<DetalleOrdenCompra> detalles = detalleRepo.listarPorOrden(idOrden);
+        List<DetalleOrdenCompra> detalles =
+                detalleRepo.listarPorOrden(idOrden);
 
         boolean completa = true;
+        boolean tieneRecepcion = false;
 
         for (DetalleOrdenCompra d : detalles) {
 
-            int recibido = entradaRepo.obtenerCantidadRecibida(d.getIdItem(), idOrden);
+            int recibido =
+                    entradaRepo.obtenerCantidadRecibida(
+                            d.getIdItem(),
+                            idOrden
+                    );
+
+            if (recibido > 0) {
+                tieneRecepcion = true;
+            }
 
             if (recibido < d.getCantidadPedida()) {
                 completa = false;
-                break;
             }
         }
 
         if (completa) {
-            // 🔥 CORREGIDO (tu modelo)
-            ordenRepo.actualizarEstado(conn, idOrden, "Recibido");
+            ordenRepo.actualizarEstado(
+                    conn,
+                    idOrden,
+                    "Recibido"
+            );
+
+            System.out.println(
+                    "📦 Orden marcada como RECIBIDO"
+            );
+
+        } else if (tieneRecepcion) {
+
+            ordenRepo.actualizarEstado(
+                    conn,
+                    idOrden,
+                    "Parcial"
+            );
+
+            System.out.println(
+                    "📦 Orden marcada como PARCIAL"
+            );
+
         } else {
-            ordenRepo.actualizarEstado(conn, idOrden, "Parcial");
+
+            ordenRepo.actualizarEstado(
+                    conn,
+                    idOrden,
+                    "Pendiente"
+            );
         }
     }
 
     // =========================
-    // 🔧 UTIL
+    // 🔧 ROLLBACK
     // =========================
     private void rollback(Connection conn) {
         try {
             if (conn != null) {
                 conn.rollback();
-                System.out.println("⚠️ Rollback ejecutado.");
+                System.out.println(
+                        "⚠️ Rollback ejecutado."
+                );
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
+    // =========================
+    // 🔧 CERRAR CONEXIÓN
+    // =========================
     private void cerrarConexion(Connection conn) {
         try {
             if (conn != null) {
                 conn.setAutoCommit(true);
                 conn.close();
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 }

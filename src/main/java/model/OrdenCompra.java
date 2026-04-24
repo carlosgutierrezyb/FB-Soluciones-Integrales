@@ -14,8 +14,11 @@ public class OrdenCompra {
     private int idOrden;
     private int idProveedor;
 
-    private String estado; // Pendiente, Recibido, Parcial, Cancelado
+    private String estado; // Pendiente, Parcial, Recibido, Cancelado
     private Timestamp fechaPedido;
+
+    // 🔥 compatibilidad legacy
+    private String numeroFactura;
 
     // =========================
     // GETTERS
@@ -25,7 +28,7 @@ public class OrdenCompra {
         return idOrden;
     }
 
-    // 🔥 COMPATIBILIDAD CON UI (JComboBox, tablas, etc.)
+    // 🔥 compatibilidad con UI
     public int getId() {
         return idOrden;
     }
@@ -40,6 +43,10 @@ public class OrdenCompra {
 
     public Timestamp getFechaPedido() {
         return fechaPedido;
+    }
+
+    public String getNumeroFactura() {
+        return numeroFactura;
     }
 
     // =========================
@@ -70,6 +77,7 @@ public class OrdenCompra {
             case "Cancelado":
                 this.estado = estado;
                 break;
+
             default:
                 throw new BusinessException("Estado inválido.");
         }
@@ -77,6 +85,10 @@ public class OrdenCompra {
 
     public void setFechaPedido(Timestamp fechaPedido) {
         this.fechaPedido = fechaPedido;
+    }
+
+    public void setNumeroFactura(String numeroFactura) {
+        this.numeroFactura = numeroFactura;
     }
 
     // =========================

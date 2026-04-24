@@ -2,11 +2,6 @@ package model;
 
 import exception.BusinessException;
 
-/**
- * Entidad Detalle de Orden de Compra.
- *
- * Representa los ítems incluidos en una orden de compra.
- */
 public class DetalleOrdenCompra {
 
     private int idDetalle;
@@ -14,6 +9,7 @@ public class DetalleOrdenCompra {
     private int idItem;
 
     private int cantidadPedida;
+    private double precioUnitario; // 🔥 FALTABA
 
     // =========================
     // GETTERS
@@ -35,8 +31,12 @@ public class DetalleOrdenCompra {
         return cantidadPedida;
     }
 
+    public double getPrecioUnitario() {
+        return precioUnitario;
+    }
+
     // =========================
-    // SETTERS CON VALIDACIÓN
+    // SETTERS
     // =========================
 
     public void setIdDetalle(int idDetalle) {
@@ -45,22 +45,29 @@ public class DetalleOrdenCompra {
 
     public void setIdOrden(int idOrden) {
         if (idOrden <= 0) {
-            throw new BusinessException("La orden es obligatoria.");
+            throw new BusinessException("Orden inválida.");
         }
         this.idOrden = idOrden;
     }
 
     public void setIdItem(int idItem) {
         if (idItem <= 0) {
-            throw new BusinessException("El producto es obligatorio.");
+            throw new BusinessException("Producto inválido.");
         }
         this.idItem = idItem;
     }
 
     public void setCantidadPedida(int cantidadPedida) {
         if (cantidadPedida <= 0) {
-            throw new BusinessException("La cantidad debe ser mayor a cero.");
+            throw new BusinessException("Cantidad inválida.");
         }
         this.cantidadPedida = cantidadPedida;
+    }
+
+    public void setPrecioUnitario(double precioUnitario) {
+        if (precioUnitario < 0) {
+            throw new BusinessException("Precio inválido.");
+        }
+        this.precioUnitario = precioUnitario;
     }
 }

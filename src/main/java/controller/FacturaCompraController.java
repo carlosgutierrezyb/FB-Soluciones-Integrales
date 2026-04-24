@@ -1,15 +1,24 @@
 package controller;
 
 import model.DetalleOrdenCompra;
-import model.Producto;
 import model.OrdenCompra;
+import model.Producto;
+import repository.ProductoRepository;
 import service.EntradaAlmacenService;
 import service.FacturaCompraService;
-import repository.ProductoRepository;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Controller de Factura de Compra
+ *
+ * 🔥 ERP PRO REAL:
+ * - valida contra entradas recibidas
+ * - NO factura de más
+ * - soporta múltiples facturas por OC
+ * - trabaja con detalle_factura_compra
+ */
 public class FacturaCompraController {
 
     private FacturaCompraService facturaService;
@@ -23,34 +32,51 @@ public class FacturaCompraController {
     }
 
     // =========================
-    // 🔹 ORDENES PARA FACTURAR
+    // 🔹 ÓRDENES PARA FACTURAR
     // =========================
     public List<OrdenCompra> obtenerOrdenesParaFacturaCompra() {
 
-        // 🔥 Aquí puedes mejorar luego con lógica real
+        /*
+         * 🔥 Solo órdenes con entradas reales:
+         * Pendiente / Parcial / Recibido
+         *
+         * Luego podemos refinar más con SQL PRO
+         */
         return entradaService.obtenerOrdenesPendientes();
     }
 
     // =========================
-    // 🔹 RESUMEN ORDEN (PRO)
+    // 🔹 RESUMEN DE ORDEN
     // =========================
     public List<Object[]> obtenerResumenOrden(int idOrden) {
 
         List<Object[]> lista = new ArrayList<>();
 
-        List<DetalleOrdenCompra> detalles = entradaService.obtenerDetalleOrden(idOrden);
+        List<DetalleOrdenCompra> detalles =
+                entradaService.obtenerDetalleOrden(idOrden);
 
         for (DetalleOrdenCompra d : detalles) {
 
-            Producto p = productoRepo.obtenerPorId(d.getIdItem());
+            Producto producto =
+                    productoRepo.obtenerPorId(d.getIdItem());
 
-            int recibido = entradaService.obtenerCantidadRecibida(
-                    d.getIdItem(),
-                    idOrden
-            );
+            int recibido =
+                    entradaService.obtenerCantidadRecibida(
+                            d.getIdItem(),
+                            idOrden
+                    );
 
+            String nombreProducto =
+                    (producto != null)
+                            ? producto.getNombre()
+                            : "Producto #" + d.getIdItem();
+
+            /*
+             * Tabla:
+             * Producto | Pedido | Recibido
+             */
             lista.add(new Object[]{
-                    p != null ? p.getNombre() : "Producto #" + d.getIdItem(),
+                    nombreProducto,
                     d.getCantidadPedida(),
                     recibido
             });
@@ -62,19 +88,26 @@ public class FacturaCompraController {
     // =========================
     // 🔹 REGISTRAR FACTURA
     // =========================
-    public String registrarFactura(int idOrden, String numero, String fecha) {
+    public String registrarFactura(
+            int idProveedor,
+            int idOrden,
+            String numeroFactura,
+            String fecha
+    ) {
 
         try {
 
             System.out.println("🧾 Registrando factura de compra...");
 
             return facturaService.registrarFactura(
+                    idProveedor,
                     idOrden,
-                    numero,
+                    numeroFactura,
                     fecha
             );
 
         } catch (Exception e) {
+
             e.printStackTrace();
             return "Error registrando factura.";
         }

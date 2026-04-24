@@ -11,8 +11,9 @@ import java.util.List;
  * Repository de productos.
  *
  * 🔥 RESPONSABILIDAD:
- * - Manejar datos maestros (catálogo)
- * - NO maneja stock (eso es InventarioRepository)
+ * - Manejar catálogo de productos
+ * - NO lógica de negocio
+ * - NO inventario complejo (solo stock básico si se usa)
  */
 public class ProductoRepository {
 
@@ -21,7 +22,8 @@ public class ProductoRepository {
     // =========================
     public boolean guardar(Producto p) {
 
-        String sql = "INSERT INTO producto (codigo_referencia, nombre, id_categoria) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO producto (codigo_referencia, nombre, id_categoria, stock_actual, stock_minimo, descripcion) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -29,6 +31,9 @@ public class ProductoRepository {
             ps.setString(1, p.getCodigoReferencia());
             ps.setString(2, p.getNombre());
             ps.setInt(3, p.getIdCategoria());
+            ps.setInt(4, p.getStockActual());
+            ps.setInt(5, p.getStockMinimo());
+            ps.setString(6, p.getDescripcion());
 
             return ps.executeUpdate() > 0;
 
@@ -43,14 +48,15 @@ public class ProductoRepository {
     // =========================
     public boolean actualizar(Producto p) {
 
-        String sql = "UPDATE producto SET nombre = ?, id_categoria = ? WHERE id = ?";
+        String sql = "UPDATE producto SET nombre = ?, id_categoria = ?, stock_minimo = ? WHERE id = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setString(1, p.getNombre());
             ps.setInt(2, p.getIdCategoria());
-            ps.setInt(3, p.getId());
+            ps.setInt(3, p.getStockMinimo());
+            ps.setInt(4, p.getId());
 
             return ps.executeUpdate() > 0;
 
@@ -128,11 +134,57 @@ public class ProductoRepository {
         return null;
     }
 
-    // =========================
-    // 🔥 ALIAS PRO
-    // =========================
     public Producto obtenerPorId(int id) {
         return buscarPorId(id);
+    }
+
+    // =========================
+    // 🔥 INVENTARIO SIMPLE (TU CASO ACTUAL)
+    // =========================
+    public boolean aumentarStock(int idProducto, int cantidad) {
+
+        String sql = "UPDATE producto SET stock_actual = stock_actual + ? WHERE id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, cantidad);
+            ps.setInt(2, idProducto);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error aumentando stock: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // =========================
+    // 🔹 ÚLTIMO CÓDIGO POR CATEGORÍA
+    // =========================
+    public String obtenerUltimoCodigoPorCategoria(int idCategoria) {
+
+        String sql = "SELECT codigo_referencia " +
+                "FROM producto " +
+                "WHERE id_categoria = ? " +
+                "ORDER BY id DESC LIMIT 1";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, idCategoria);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString("codigo_referencia");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error obteniendo código: " + e.getMessage());
+        }
+
+        return null;
     }
 
     // =========================
@@ -146,6 +198,11 @@ public class ProductoRepository {
         p.setCodigoReferencia(rs.getString("codigo_referencia"));
         p.setNombre(rs.getString("nombre"));
         p.setIdCategoria(rs.getInt("id_categoria"));
+
+        // 🔥 CAMPOS INVENTARIO
+        p.setStockActual(rs.getInt("stock_actual"));
+        p.setStockMinimo(rs.getInt("stock_minimo"));
+        p.setDescripcion(rs.getString("descripcion"));
 
         return p;
     }

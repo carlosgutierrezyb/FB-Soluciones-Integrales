@@ -11,15 +11,19 @@ import java.time.LocalDateTime;
  * - Representa el documento del proveedor
  * - Valida lo recibido en entradas
  * - NO maneja stock directamente
+ * - Puede soportar múltiples facturas por OC
  */
 public class FacturaCompra {
 
     private int idFactura;
     private int idProveedor;
-    private int idOrden; // Atributo integrado
+    private int idOrden;
     private String numeroFactura;
     private LocalDateTime fecha;
     private String estado; // Registrada, Validada
+
+    // 🔥 NUEVO CAMPO
+    private String observacion;
 
     // =========================
     // GETTERS
@@ -49,6 +53,10 @@ public class FacturaCompra {
         return estado;
     }
 
+    public String getObservacion() {
+        return observacion;
+    }
+
     // =========================
     // SETTERS (VALIDADOS)
     // =========================
@@ -76,6 +84,9 @@ public class FacturaCompra {
     }
 
     public void setFecha(LocalDateTime fecha) {
+        if (fecha == null) {
+            throw new BusinessException("Fecha obligatoria.");
+        }
         this.fecha = fecha;
     }
 
@@ -88,10 +99,27 @@ public class FacturaCompra {
         switch (estado) {
             case "Registrada":
             case "Validada":
+            case "Anulada":
                 this.estado = estado;
                 break;
+
             default:
                 throw new BusinessException("Estado inválido.");
         }
+    }
+
+    public void setObservacion(String observacion) {
+        this.observacion = observacion;
+    }
+
+    // =========================
+    // TO STRING
+    // =========================
+
+    @Override
+    public String toString() {
+        return numeroFactura != null
+                ? numeroFactura
+                : "Factura #" + idFactura;
     }
 }

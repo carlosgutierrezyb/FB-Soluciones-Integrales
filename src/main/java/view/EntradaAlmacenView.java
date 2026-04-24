@@ -16,6 +16,8 @@ public class EntradaAlmacenView extends JFrame {
     private DefaultTableModel modelo;
 
     private JTextField txtCantidadRecibida;
+    private JTextField txtPrecioCompra;       // 🔥 NUEVO
+    private JTextField txtNumeroFactura;      // 🔥 NUEVO
 
     private JButton btnCargarOrden;
     private JButton btnRegistrarEntrada;
@@ -29,7 +31,7 @@ public class EntradaAlmacenView extends JFrame {
     public EntradaAlmacenView() {
 
         setTitle("F&B Soluciones Integrales - Entrada de Almacén");
-        setSize(900, 500);
+        setSize(900, 550);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 
@@ -66,13 +68,23 @@ public class EntradaAlmacenView extends JFrame {
         // =========================
         // PANEL INFERIOR
         // =========================
-        JPanel panelBottom = new JPanel();
+        JPanel panelBottom = new JPanel(new FlowLayout());
 
-        txtCantidadRecibida = new JTextField(10);
+        txtCantidadRecibida = new JTextField(8);
+        txtPrecioCompra = new JTextField(8);     // 🔥 NUEVO
+        txtNumeroFactura = new JTextField(10);   // 🔥 NUEVO
+
         btnRegistrarEntrada = new JButton("Registrar Entrada");
 
-        panelBottom.add(new JLabel("Cantidad a ingresar:"));
+        panelBottom.add(new JLabel("Cantidad:"));
         panelBottom.add(txtCantidadRecibida);
+
+        panelBottom.add(new JLabel("Precio:"));
+        panelBottom.add(txtPrecioCompra);
+
+        panelBottom.add(new JLabel("Factura/Remisión:"));
+        panelBottom.add(txtNumeroFactura);
+
         panelBottom.add(btnRegistrarEntrada);
 
         add(panelBottom, BorderLayout.SOUTH);
@@ -80,14 +92,12 @@ public class EntradaAlmacenView extends JFrame {
         // =========================
         // EVENTOS
         // =========================
-
         btnCargarOrden.addActionListener(e -> cargarDetalleOrden());
-
         btnRegistrarEntrada.addActionListener(e -> registrarEntrada());
     }
 
     // =========================
-    // 🔹 CARGAR ÓRDENES
+    // CARGAR ÓRDENES
     // =========================
     public void cargarOrdenes() {
 
@@ -101,7 +111,7 @@ public class EntradaAlmacenView extends JFrame {
     }
 
     // =========================
-    // 🔹 CARGAR DETALLE
+    // CARGAR DETALLE
     // =========================
     private void cargarDetalleOrden() {
 
@@ -114,11 +124,16 @@ public class EntradaAlmacenView extends JFrame {
 
         modelo.setRowCount(0);
 
-        List<DetalleOrdenCompra> detalles = controller.obtenerDetalleOrden(orden.getId());
+        List<DetalleOrdenCompra> detalles =
+                controller.obtenerDetalleOrden(orden.getId());
 
         for (DetalleOrdenCompra d : detalles) {
 
-            int recibido = controller.obtenerCantidadRecibida(d.getIdItem(), orden.getId());
+            int recibido = controller.obtenerCantidadRecibida(
+                    d.getIdItem(),
+                    orden.getId()
+            );
+
             int pendiente = d.getCantidadPedida() - recibido;
 
             modelo.addRow(new Object[]{
@@ -131,7 +146,7 @@ public class EntradaAlmacenView extends JFrame {
     }
 
     // =========================
-    // 🔹 REGISTRAR ENTRADA
+    // REGISTRAR ENTRADA (CORREGIDO)
     // =========================
     private void registrarEntrada() {
 
@@ -142,13 +157,25 @@ public class EntradaAlmacenView extends JFrame {
             return;
         }
 
-        OrdenCompra orden = (OrdenCompra) comboOrdenes.getSelectedItem();
+        OrdenCompra orden =
+                (OrdenCompra) comboOrdenes.getSelectedItem();
 
-        int idItem = (int) modelo.getValueAt(fila, 0);
-        int pendiente = (int) modelo.getValueAt(fila, 3);
+        int idItem =
+                (int) modelo.getValueAt(fila, 0);
+
+        int pendiente =
+                (int) modelo.getValueAt(fila, 3);
 
         try {
-            int cantidad = Integer.parseInt(txtCantidadRecibida.getText());
+
+            int cantidad =
+                    Integer.parseInt(txtCantidadRecibida.getText());
+
+            double precio =
+                    Double.parseDouble(txtPrecioCompra.getText());
+
+            String numeroFactura =
+                    txtNumeroFactura.getText().trim();
 
             if (cantidad <= 0) {
                 JOptionPane.showMessageDialog(this, "Cantidad inválida.");
@@ -156,30 +183,40 @@ public class EntradaAlmacenView extends JFrame {
             }
 
             if (cantidad > pendiente) {
-                JOptionPane.showMessageDialog(this, "No puede ingresar más de lo pendiente.");
+                JOptionPane.showMessageDialog(this, "No puede exceder lo pendiente.");
                 return;
             }
 
-            String resultado = controller.registrarEntrada(
-                    orden.getId(),
-                    idItem,
-                    cantidad
-            );
+            String resultado =
+                    controller.registrarEntrada(
+                            orden.getId(),
+                            idItem,
+                            cantidad,
+                            precio,
+                            numeroFactura
+                    );
 
             if ("OK".equals(resultado)) {
 
-                JOptionPane.showMessageDialog(this, "Entrada registrada correctamente.");
+                JOptionPane.showMessageDialog(this,
+                        "Entrada registrada correctamente.");
 
                 txtCantidadRecibida.setText("");
+                txtPrecioCompra.setText("");
+                txtNumeroFactura.setText("");
 
-                cargarDetalleOrden(); // 🔥 refrescar
+                cargarDetalleOrden();
 
             } else {
-                JOptionPane.showMessageDialog(this, resultado, "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this,
+                        resultado,
+                        "Error",
+                        JOptionPane.ERROR_MESSAGE);
             }
 
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Cantidad inválida.");
+            JOptionPane.showMessageDialog(this,
+                    "Cantidad o precio inválido.");
         }
     }
 }

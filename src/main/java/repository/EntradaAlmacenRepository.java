@@ -1,6 +1,7 @@
 package repository;
 
 import model.EntradaAlmacen;
+import util.DatabaseConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -14,6 +15,7 @@ import java.sql.SQLException;
  * - Registra cada entrada (histórico)
  * - Actualiza inventario usando InventarioRepository
  * - Permite consultar cantidades recibidas
+ * - Soporta facturación contra entradas reales
  */
 public class EntradaAlmacenRepository {
 
@@ -37,7 +39,7 @@ public class EntradaAlmacenRepository {
             System.out.println("📦 Guardando entrada de almacén...");
 
             // =========================
-            // 🔹 1. INSERT ENTRADA
+            // 🔹 1. INSERT ENTRDA
             // =========================
             psEntrada.setInt(1, entrada.getIdOrden());
             psEntrada.setInt(2, entrada.getIdItem());
@@ -52,7 +54,7 @@ public class EntradaAlmacenRepository {
             }
 
             // =========================
-            // 🔥 2. ACTUALIZAR INVENTARIO (BIEN HECHO)
+            // 🔥 2. ACTUALIZAR INVENTARIO
             // =========================
             boolean actualizado = inventarioRepo.actualizarStock(
                     conn,
@@ -84,7 +86,7 @@ public class EntradaAlmacenRepository {
                 "FROM entradas_almacen " +
                 "WHERE id_item = ? AND id_orden = ?";
 
-        try (Connection conn = util.DatabaseConnection.getConnection();
+        try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
 
             ps.setInt(1, idItem);
@@ -98,6 +100,87 @@ public class EntradaAlmacenRepository {
 
         } catch (SQLException e) {
             System.err.println("❌ Error calculando cantidad recibida: " + e.getMessage());
+        }
+
+        return 0;
+    }
+
+    // =========================
+    // 🔹 OBTENER ID ITEM POR ENTRADA
+    // =========================
+    public int obtenerIdItemPorEntrada(int idEntrada) {
+
+        String sql = "SELECT id_item " +
+                "FROM entradas_almacen " +
+                "WHERE id_entrada = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, idEntrada);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id_item");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error obteniendo id_item: " + e.getMessage());
+        }
+
+        return 0;
+    }
+
+    // =========================
+    // 🔹 OBTENER CANTIDAD POR ENTRADA
+    // =========================
+    public int obtenerCantidadPorEntrada(int idEntrada) {
+
+        String sql = "SELECT cantidad_recibida " +
+                "FROM entradas_almacen " +
+                "WHERE id_entrada = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, idEntrada);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("cantidad_recibida");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error obteniendo cantidad: " + e.getMessage());
+        }
+
+        return 0;
+    }
+
+    // =========================
+    // 🔹 OBTENER PRECIO POR ENTRADA
+    // =========================
+    public double obtenerPrecioCompraPorEntrada(int idEntrada) {
+
+        String sql = "SELECT precio_compra_unitario " +
+                "FROM entradas_almacen " +
+                "WHERE id_entrada = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setInt(1, idEntrada);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("precio_compra_unitario");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.err.println("❌ Error obteniendo precio de compra: " + e.getMessage());
         }
 
         return 0;
