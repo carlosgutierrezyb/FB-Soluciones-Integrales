@@ -103,8 +103,13 @@ public class ComprasView extends JFrame {
         btnRegistrar = new JButton("Crear Orden de Compra");
         btnLimpiar = new JButton("Limpiar");
 
-        btnRegistrar.setBackground(new Color(0, 102, 204));
+        btnRegistrar.setBackground(new Color(0, 153, 76));
         btnRegistrar.setForeground(Color.WHITE);
+
+        btnRegistrar.setFocusPainted(false);
+        btnRegistrar.setContentAreaFilled(true);
+        btnRegistrar.setOpaque(true);
+        btnRegistrar.setBorderPainted(false);
 
         panelBotones.add(btnRegistrar);
         panelBotones.add(btnLimpiar);

@@ -1,54 +1,64 @@
 package view;
 
-import controller.ProveedorController;
-import model.Proveedor;
+import controller.ClienteController;
+import model.Cliente;
 
 import javax.swing.*;
 import java.awt.*;
 
-public class ProveedorView extends JDialog {
+/**
+ * Vista para registrar y editar clientes.
+ *
+ * 🔥 ERP F&B
+ * - CRUD Clientes
+ * - Soporte empresas y contactos
+ */
+public class ClienteView extends JDialog {
 
     private JTextField txtNombre;
     private JTextField txtNumeroId;
     private JTextField txtDireccion;
     private JTextField txtCiudad;
-
     private JTextField txtTelefono;
     private JTextField txtEmail;
 
+    // 🔥 CONTACTO
     private JTextField txtContacto;
-    private JTextField txtCelular;
-    private JTextField txtEmailContacto;
+    private JTextField txtTelefonoContacto;
+    private JTextField txtCorreoContacto;
 
     private JComboBox<String> comboTipoId;
-    private JComboBox<String> comboDv;
 
     private JButton btnGuardar;
     private JButton btnCancelar;
 
-    private ProveedorController controller;
+    private ClienteController controller;
+
+    // 🔥 MODO EDICIÓN
+    private Cliente clienteEdicion;
 
     // =========================
-    // 🔹 MODO EDICIÓN
+    // SET CONTROLLER
     // =========================
-    private Proveedor proveedorEdicion;
-
     public void setController(
-            ProveedorController controller
+            ClienteController controller
     ) {
 
         this.controller = controller;
     }
 
-    public ProveedorView(Frame parent) {
+    // =========================
+    // CONSTRUCTOR
+    // =========================
+    public ClienteView(Frame parent) {
 
         super(
                 parent,
-                "Proveedor",
+                "Nuevo Cliente",
                 true
         );
 
-        setSize(500, 520);
+        setSize(550, 550);
 
         setLocationRelativeTo(parent);
 
@@ -60,18 +70,18 @@ public class ProveedorView extends JDialog {
     }
 
     // =========================
-    // 🔹 COMPONENTES
+    // UI
     // =========================
     private void inicializarComponentes() {
 
         JPanel panel =
                 new JPanel(
-                        new GridLayout(11, 2, 10, 10)
+                        new GridLayout(10, 2, 10, 10)
                 );
 
         panel.setBorder(
                 BorderFactory.createTitledBorder(
-                        "Datos del Proveedor"
+                        "Datos del Cliente"
                 )
         );
 
@@ -87,45 +97,32 @@ public class ProveedorView extends JDialog {
 
         txtEmail = new JTextField();
 
+        // 🔥 CONTACTO
         txtContacto = new JTextField();
 
-        txtCelular = new JTextField();
+        txtTelefonoContacto = new JTextField();
 
-        txtEmailContacto = new JTextField();
+        txtCorreoContacto = new JTextField();
 
         comboTipoId =
                 new JComboBox<>(
                         new String[]{
-                                "NIT",
                                 "CC",
+                                "NIT",
                                 "CE",
                                 "PASAPORTE"
                         }
                 );
 
-        comboDv = new JComboBox<>();
-
-        comboDv.addItem("");
-
-        for (int i = 0; i <= 9; i++) {
-
-            comboDv.addItem(
-                    String.valueOf(i)
-            );
-        }
-
         // =========================
         // CAMPOS
         // =========================
 
-        panel.add(new JLabel("Tipo ID:"));
+        panel.add(new JLabel("Tipo Identificación:"));
         panel.add(comboTipoId);
 
-        panel.add(new JLabel("Número ID:"));
+        panel.add(new JLabel("Número Identificación:"));
         panel.add(txtNumeroId);
-
-        panel.add(new JLabel("DV:"));
-        panel.add(comboDv);
 
         panel.add(new JLabel("Nombre / Razón Social:"));
         panel.add(txtNombre);
@@ -139,17 +136,18 @@ public class ProveedorView extends JDialog {
         panel.add(new JLabel("Teléfono:"));
         panel.add(txtTelefono);
 
-        panel.add(new JLabel("Email:"));
+        panel.add(new JLabel("Correo Electrónico:"));
         panel.add(txtEmail);
 
-        panel.add(new JLabel("Contacto:"));
+        // 🔥 CONTACTO
+        panel.add(new JLabel("Nombre Contacto:"));
         panel.add(txtContacto);
 
-        panel.add(new JLabel("Celular Contacto:"));
-        panel.add(txtCelular);
+        panel.add(new JLabel("Teléfono Contacto:"));
+        panel.add(txtTelefonoContacto);
 
-        panel.add(new JLabel("Email Contacto:"));
-        panel.add(txtEmailContacto);
+        panel.add(new JLabel("Correo Contacto:"));
+        panel.add(txtCorreoContacto);
 
         add(panel, BorderLayout.CENTER);
 
@@ -174,6 +172,14 @@ public class ProveedorView extends JDialog {
                 Color.WHITE
         );
 
+        btnGuardar.setFocusPainted(false);
+
+        btnGuardar.setContentAreaFilled(true);
+
+        btnGuardar.setOpaque(true);
+
+        btnGuardar.setBorderPainted(false);
+
         panelBotones.add(btnGuardar);
 
         panelBotones.add(btnCancelar);
@@ -185,7 +191,7 @@ public class ProveedorView extends JDialog {
         // =========================
 
         btnGuardar.addActionListener(
-                e -> guardarProveedor()
+                e -> guardarCliente()
         );
 
         btnCancelar.addActionListener(
@@ -194,65 +200,62 @@ public class ProveedorView extends JDialog {
     }
 
     // =========================
-    // 🔹 CARGAR PROVEEDOR
+    // 🔹 CARGAR CLIENTE
     // =========================
-    public void cargarProveedor(
-            Proveedor p
+    public void cargarCliente(
+            Cliente c
     ) {
 
-        this.proveedorEdicion = p;
+        this.clienteEdicion = c;
 
-        setTitle("Editar Proveedor");
+        setTitle("Editar Cliente");
 
         comboTipoId.setSelectedItem(
-                p.getTipoIdentificacion()
+                c.getTipoIdentificacion()
         );
 
         txtNumeroId.setText(
-                p.getNumeroIdentificacion()
-        );
-
-        comboDv.setSelectedItem(
-                p.getDv()
+                c.getIdentificacion()
         );
 
         txtNombre.setText(
-                p.getNombreRazonSocial()
+                c.getNombre()
         );
 
         txtDireccion.setText(
-                p.getDireccion()
+                c.getDireccion()
         );
 
         txtCiudad.setText(
-                p.getCiudad()
+                c.getCiudad()
         );
 
         txtTelefono.setText(
-                p.getTelefono()
+                c.getTelefono()
         );
 
         txtEmail.setText(
-                p.getEmail()
+                c.getCorreo()
         );
 
+        // 🔥 CONTACTO
         txtContacto.setText(
-                p.getContactoNombre()
+                c.getContactoNombre()
         );
 
-        txtCelular.setText(
-                p.getContactoCelular()
+        txtTelefonoContacto.setText(
+                c.getContactoTelefono()
         );
 
-        txtEmailContacto.setText(
-                p.getContactoEmail()
+        txtCorreoContacto.setText(
+                c.getContactoEmail()
         );
     }
 
     // =========================
-    // 🔹 GUARDAR / ACTUALIZAR
+    // GUARDAR / ACTUALIZAR
     // =========================
-    private void guardarProveedor() {
+    private void guardarCliente() {
 
         if (controller == null) return;
 
@@ -270,7 +273,7 @@ public class ProveedorView extends JDialog {
 
             JOptionPane.showMessageDialog(
                     this,
-                    "Nombre y Número ID son obligatorios."
+                    "Nombre y número de identificación son obligatorios."
             );
 
             return;
@@ -281,10 +284,10 @@ public class ProveedorView extends JDialog {
         // =========================
         // 🔹 NUEVO
         // =========================
-        if (proveedorEdicion == null) {
+        if (clienteEdicion == null) {
 
             resultado =
-                    controller.guardarProveedor(
+                    controller.guardarCliente(
 
                             txtNombre.getText(),
 
@@ -293,10 +296,6 @@ public class ProveedorView extends JDialog {
                                     .toString(),
 
                             txtNumeroId.getText(),
-
-                            comboDv
-                                    .getSelectedItem()
-                                    .toString(),
 
                             txtDireccion.getText(),
 
@@ -308,11 +307,10 @@ public class ProveedorView extends JDialog {
 
                             txtContacto.getText(),
 
-                            txtCelular.getText(),
+                            txtTelefonoContacto.getText(),
 
-                            txtEmailContacto.getText()
+                            txtCorreoContacto.getText()
                     );
-
         }
 
         // =========================
@@ -321,9 +319,9 @@ public class ProveedorView extends JDialog {
         else {
 
             resultado =
-                    controller.actualizarProveedor(
+                    controller.actualizarCliente(
 
-                            proveedorEdicion.getId(),
+                            clienteEdicion.getIdCliente(),
 
                             txtNombre.getText(),
 
@@ -332,10 +330,6 @@ public class ProveedorView extends JDialog {
                                     .toString(),
 
                             txtNumeroId.getText(),
-
-                            comboDv
-                                    .getSelectedItem()
-                                    .toString(),
 
                             txtDireccion.getText(),
 
@@ -347,9 +341,11 @@ public class ProveedorView extends JDialog {
 
                             txtContacto.getText(),
 
-                            txtCelular.getText(),
+                            txtTelefonoContacto.getText(),
 
-                            txtEmailContacto.getText()
+                            txtCorreoContacto.getText(),
+
+                            clienteEdicion.getEstado()
                     );
         }
 
@@ -357,7 +353,7 @@ public class ProveedorView extends JDialog {
 
             JOptionPane.showMessageDialog(
                     this,
-                    "Proveedor guardado correctamente."
+                    "Cliente guardado correctamente."
             );
 
             dispose();

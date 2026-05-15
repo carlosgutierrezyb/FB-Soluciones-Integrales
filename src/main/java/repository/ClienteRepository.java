@@ -1,6 +1,6 @@
 package repository;
 
-import model.Proveedor;
+import model.Cliente;
 import util.DatabaseConnection;
 
 import java.sql.*;
@@ -8,28 +8,26 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Repository de proveedores ERP F&B
+ * Repository de clientes.
  *
- * 🔥 RESPONSABILIDADES:
- * - CRUD de proveedores
- * - Acceso a datos
- * - Soft delete (inactivar)
- * - Mapper ResultSet -> Proveedor
+ * 🔥 ERP F&B:
+ * - Maneja CRUD de clientes
+ * - Base para ventas
+ * - Base para órdenes de servicio
  */
-public class ProveedorRepository {
+public class ClienteRepository {
 
     // =========================
-    // 🔹 LISTAR ACTIVOS
+    // 🔹 LISTAR TODOS
     // =========================
-    public List<Proveedor> listarTodos() {
+    public List<Cliente> listarTodos() {
 
-        List<Proveedor> lista =
+        List<Cliente> lista =
                 new ArrayList<>();
 
         String sql =
-                "SELECT * FROM proveedores " +
-                        "WHERE estado = 'ACTIVO' " +
-                        "ORDER BY nombre_razon_social";
+                "SELECT * FROM clientes " +
+                        "ORDER BY nombre";
 
         try (
 
@@ -54,7 +52,7 @@ public class ProveedorRepository {
         } catch (SQLException e) {
 
             System.err.println(
-                    "❌ Error listando proveedores: "
+                    "❌ Error listando clientes: "
                             + e.getMessage()
             );
         }
@@ -66,25 +64,24 @@ public class ProveedorRepository {
     // 🔹 GUARDAR
     // =========================
     public boolean guardar(
-            Proveedor p
+            Cliente c
     ) {
 
         String sql =
-                "INSERT INTO proveedores (" +
+                "INSERT INTO clientes (" +
                         "tipo_identificacion, " +
-                        "numero_identificacion, " +
-                        "dv, " +
-                        "nombre_razon_social, " +
+                        "nombre, " +
+                        "identificacion, " +
+                        "telefono, " +
+                        "correo, " +
                         "direccion, " +
                         "ciudad, " +
-                        "telefono, " +
-                        "email, " +
                         "contacto_nombre, " +
-                        "contacto_celular, " +
+                        "contacto_telefono, " +
                         "contacto_email, " +
                         "estado" +
                         ") " +
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (
 
@@ -98,62 +95,58 @@ public class ProveedorRepository {
 
             ps.setString(
                     1,
-                    p.getTipoIdentificacion()
+                    c.getTipoIdentificacion()
             );
 
             ps.setString(
                     2,
-                    p.getNumeroIdentificacion()
+                    c.getNombre()
             );
 
             ps.setString(
                     3,
-                    p.getDv()
+                    c.getIdentificacion()
             );
 
             ps.setString(
                     4,
-                    p.getNombreRazonSocial()
+                    c.getTelefono()
             );
 
             ps.setString(
                     5,
-                    p.getDireccion()
+                    c.getCorreo()
             );
 
             ps.setString(
                     6,
-                    p.getCiudad()
+                    c.getDireccion()
             );
 
             ps.setString(
                     7,
-                    p.getTelefono()
+                    c.getCiudad()
             );
 
+            // 🔥 NUEVOS CAMPOS
             ps.setString(
                     8,
-                    p.getEmail()
+                    c.getContactoNombre()
             );
 
             ps.setString(
                     9,
-                    p.getContactoNombre()
+                    c.getContactoTelefono()
             );
 
             ps.setString(
                     10,
-                    p.getContactoCelular()
+                    c.getContactoEmail()
             );
 
             ps.setString(
                     11,
-                    p.getContactoEmail()
-            );
-
-            ps.setString(
-                    12,
-                    "ACTIVO"
+                    c.getEstado()
             );
 
             return ps.executeUpdate() > 0;
@@ -161,7 +154,7 @@ public class ProveedorRepository {
         } catch (SQLException e) {
 
             System.err.println(
-                    "❌ Error guardando proveedor: "
+                    "❌ Error guardando cliente: "
                             + e.getMessage()
             );
 
@@ -170,26 +163,26 @@ public class ProveedorRepository {
     }
 
     // =========================
-// 🔹 ACTUALIZAR
-// =========================
+    // 🔹 ACTUALIZAR
+    // =========================
     public boolean actualizar(
-            Proveedor p
+            Cliente c
     ) {
 
         String sql =
-                "UPDATE proveedores SET " +
+                "UPDATE clientes SET " +
                         "tipo_identificacion = ?, " +
-                        "numero_identificacion = ?, " +
-                        "dv = ?, " +
-                        "nombre_razon_social = ?, " +
+                        "nombre = ?, " +
+                        "identificacion = ?, " +
+                        "telefono = ?, " +
+                        "correo = ?, " +
                         "direccion = ?, " +
                         "ciudad = ?, " +
-                        "telefono = ?, " +
-                        "email = ?, " +
                         "contacto_nombre = ?, " +
-                        "contacto_celular = ?, " +
-                        "contacto_email = ? " +
-                        "WHERE id_proveedor = ?";
+                        "contacto_telefono = ?, " +
+                        "contacto_email = ?, " +
+                        "estado = ? " +
+                        "WHERE id_cliente = ?";
 
         try (
 
@@ -203,95 +196,110 @@ public class ProveedorRepository {
 
             ps.setString(
                     1,
-                    p.getTipoIdentificacion()
+                    c.getTipoIdentificacion()
             );
 
             ps.setString(
                     2,
-                    p.getNumeroIdentificacion()
+                    c.getNombre()
             );
 
             ps.setString(
                     3,
-                    p.getDv()
+                    c.getIdentificacion()
             );
 
             ps.setString(
                     4,
-                    p.getNombreRazonSocial()
+                    c.getTelefono()
             );
 
             ps.setString(
                     5,
-                    p.getDireccion()
+                    c.getCorreo()
             );
 
             ps.setString(
                     6,
-                    p.getCiudad()
+                    c.getDireccion()
             );
 
             ps.setString(
                     7,
-                    p.getTelefono()
+                    c.getCiudad()
             );
 
+            // 🔥 NUEVOS CAMPOS
             ps.setString(
                     8,
-                    p.getEmail()
+                    c.getContactoNombre()
             );
 
             ps.setString(
                     9,
-                    p.getContactoNombre()
+                    c.getContactoTelefono()
             );
 
             ps.setString(
                     10,
-                    p.getContactoCelular()
+                    c.getContactoEmail()
             );
 
             ps.setString(
                     11,
-                    p.getContactoEmail()
+                    c.getEstado()
             );
 
             ps.setInt(
                     12,
-                    p.getId()
+                    c.getIdCliente()
             );
 
-            // 🔥 DEBUG
-            System.out.println(
-                    "🟡 ACTUALIZANDO PROVEEDOR ID: "
-                            + p.getId()
-            );
-
-            int filas =
-                    ps.executeUpdate();
-
-            // 🔥 DEBUG
-            System.out.println(
-                    "🟢 FILAS ACTUALIZADAS: "
-                            + filas
-            );
-
-            System.out.println(
-                    "🟢 NUEVO NOMBRE: "
-                            + p.getNombreRazonSocial()
-            );
-
-            System.out.println(
-                    "🟢 DB URL: "
-                            + conn.getMetaData().getURL()
-            );
-
-            return filas > 0;
+            return ps.executeUpdate() > 0;
 
         } catch (SQLException e) {
 
             System.err.println(
-                    "❌ Error actualizando proveedor: "
+                    "❌ Error actualizando cliente: "
+                            + e.getMessage()
+            );
+
+            return false;
+        }
+    }
+
+    // =========================
+    // 🔹 ELIMINAR
+    // =========================
+    public boolean eliminar(
+            int idCliente
+    ) {
+
+        String sql =
+                "DELETE FROM clientes " +
+                        "WHERE id_cliente = ?";
+
+        try (
+
+                Connection conn =
+                        DatabaseConnection.getConnection();
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+
+        ) {
+
+            ps.setInt(
+                    1,
+                    idCliente
+            );
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+
+            System.err.println(
+                    "❌ Error eliminando cliente: "
                             + e.getMessage()
             );
 
@@ -302,13 +310,13 @@ public class ProveedorRepository {
     // =========================
     // 🔹 BUSCAR POR ID
     // =========================
-    public Proveedor buscarPorId(
-            int idProveedor
+    public Cliente buscarPorId(
+            int idCliente
     ) {
 
         String sql =
-                "SELECT * FROM proveedores " +
-                        "WHERE id_proveedor = ?";
+                "SELECT * FROM clientes " +
+                        "WHERE id_cliente = ?";
 
         try (
 
@@ -322,7 +330,7 @@ public class ProveedorRepository {
 
             ps.setInt(
                     1,
-                    idProveedor
+                    idCliente
             );
 
             try (
@@ -339,7 +347,7 @@ public class ProveedorRepository {
         } catch (SQLException e) {
 
             System.err.println(
-                    "❌ Error buscando proveedor: "
+                    "❌ Error buscando cliente: "
                             + e.getMessage()
             );
         }
@@ -348,107 +356,64 @@ public class ProveedorRepository {
     }
 
     // =========================
-    // 🔹 INACTIVAR
-    // =========================
-    public boolean inactivar(
-            int idProveedor
-    ) {
-
-        String sql =
-                "UPDATE proveedores " +
-                        "SET estado = 'INACTIVO' " +
-                        "WHERE id_proveedor = ?";
-
-        try (
-
-                Connection conn =
-                        DatabaseConnection.getConnection();
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql)
-
-        ) {
-
-            ps.setInt(
-                    1,
-                    idProveedor
-            );
-
-            return ps.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-
-            System.err.println(
-                    "❌ Error inactivando proveedor: "
-                            + e.getMessage()
-            );
-
-            return false;
-        }
-    }
-
-    // =========================
     // 🔧 MAPPER
     // =========================
-    private Proveedor mapear(
+    private Cliente mapear(
             ResultSet rs
     ) throws SQLException {
 
-        Proveedor p =
-                new Proveedor();
+        Cliente c =
+                new Cliente();
 
-        p.setId(
-                rs.getInt("id_proveedor")
+        c.setIdCliente(
+                rs.getInt("id_cliente")
         );
 
-        p.setTipoIdentificacion(
+        c.setNombre(
+                rs.getString("nombre")
+        );
+
+        c.setTipoIdentificacion(
                 rs.getString("tipo_identificacion")
         );
 
-        p.setNumeroIdentificacion(
-                rs.getString("numero_identificacion")
+        c.setIdentificacion(
+                rs.getString("identificacion")
         );
 
-        p.setDv(
-                rs.getString("dv")
-        );
-
-        p.setNombreRazonSocial(
-                rs.getString("nombre_razon_social")
-        );
-
-        p.setDireccion(
-                rs.getString("direccion")
-        );
-
-        p.setCiudad(
-                rs.getString("ciudad")
-        );
-
-        p.setTelefono(
+        c.setTelefono(
                 rs.getString("telefono")
         );
 
-        p.setEmail(
-                rs.getString("email")
+        c.setCorreo(
+                rs.getString("correo")
         );
 
-        p.setContactoNombre(
+        c.setDireccion(
+                rs.getString("direccion")
+        );
+
+        c.setCiudad(
+                rs.getString("ciudad")
+        );
+
+        // 🔥 NUEVOS CAMPOS
+        c.setContactoNombre(
                 rs.getString("contacto_nombre")
         );
 
-        p.setContactoCelular(
-                rs.getString("contacto_celular")
+        c.setContactoTelefono(
+                rs.getString("contacto_telefono")
         );
 
-        p.setContactoEmail(
+        c.setContactoEmail(
                 rs.getString("contacto_email")
         );
 
-        p.setEstado(
+        c.setEstado(
                 rs.getString("estado")
         );
 
-        return p;
+        return c;
     }
 }

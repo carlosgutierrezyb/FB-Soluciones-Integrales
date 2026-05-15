@@ -45,7 +45,7 @@ public class InventarioView extends JFrame {
     public InventarioView() {
         setTitle("F&B Soluciones Integrales - Catálogo de Referencias");
         setSize(950, 600);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10, 10));
 

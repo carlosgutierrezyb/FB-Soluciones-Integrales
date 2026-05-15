@@ -27,6 +27,8 @@ public class Proveedor {
     private String contactoCelular;
     private String contactoEmail;
 
+    private String estado;
+
     // =========================
     // GETTERS
     // =========================
@@ -77,6 +79,10 @@ public class Proveedor {
 
     public String getContactoEmail() {
         return contactoEmail;
+    }
+
+    public String getEstado() {
+        return estado;
     }
 
     // =========================
@@ -138,6 +144,10 @@ public class Proveedor {
 
     public void setContactoEmail(String contactoEmail) {
         this.contactoEmail = contactoEmail;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
     }
 
     // =========================

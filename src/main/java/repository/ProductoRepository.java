@@ -22,7 +22,7 @@ public class ProductoRepository {
     // =========================
     public boolean guardar(Producto p) {
 
-        String sql = "INSERT INTO producto (codigo_referencia, nombre, id_categoria, stock_actual, stock_minimo, descripcion) " +
+        String sql = "INSERT INTO producto (codigo_referencia, nombre, id_categoria, stock_actual, stock_minimo) " +
                 "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -33,7 +33,7 @@ public class ProductoRepository {
             ps.setInt(3, p.getIdCategoria());
             ps.setInt(4, p.getStockActual());
             ps.setInt(5, p.getStockMinimo());
-            ps.setString(6, p.getDescripcion());
+
 
             return ps.executeUpdate() > 0;
 
@@ -101,6 +101,8 @@ public class ProductoRepository {
             while (rs.next()) {
                 lista.add(mapearProducto(rs));
             }
+
+            System.out.println("Productos encontrados: " + lista.size());
 
         } catch (SQLException e) {
             System.err.println("❌ Error al listar productos: " + e.getMessage());
@@ -202,7 +204,6 @@ public class ProductoRepository {
         // 🔥 CAMPOS INVENTARIO
         p.setStockActual(rs.getInt("stock_actual"));
         p.setStockMinimo(rs.getInt("stock_minimo"));
-        p.setDescripcion(rs.getString("descripcion"));
 
         return p;
     }
