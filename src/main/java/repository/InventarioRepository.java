@@ -13,6 +13,9 @@ import java.util.Map;
  * - Manejar stock
  * - Consultar niveles de inventario
  * - Ejecutar movimientos (entradas/salidas)
+ *
+ * ✅ Fuente real:
+ * tabla producto
  */
 public class InventarioRepository {
 
@@ -21,42 +24,74 @@ public class InventarioRepository {
     // =========================
     public int obtenerStock(int idProducto) {
 
-        String sql = "SELECT stock_actual FROM inventario WHERE id_producto = ?";
+        String sql =
+                "SELECT stock_actual " +
+                        "FROM producto " +
+                        "WHERE id = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (
+                Connection conn =
+                        DatabaseConnection.getConnection();
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+        ) {
 
             ps.setInt(1, idProducto);
 
-            try (ResultSet rs = ps.executeQuery()) {
+            try (
+                    ResultSet rs =
+                            ps.executeQuery()
+            ) {
+
                 if (rs.next()) {
+
                     return rs.getInt("stock_actual");
                 }
             }
 
         } catch (SQLException e) {
-            System.err.println("❌ Error obteniendo stock: " + e.getMessage());
+
+            System.err.println(
+                    "❌ Error obteniendo stock: "
+                            + e.getMessage()
+            );
         }
 
         return 0;
     }
 
     // =========================
-    // 🔹 ACTUALIZAR STOCK (TRANSACCIÓN)
+    // 🔹 AUMENTAR STOCK
     // =========================
-    public boolean actualizarStock(Connection conn, int idProducto, int cantidad) throws SQLException {
+    public boolean actualizarStock(
+            Connection conn,
+            int idProducto,
+            int cantidad
+    ) throws SQLException {
 
-        String sql = "UPDATE inventario SET stock_actual = stock_actual + ? WHERE id_producto = ?";
+        String sql =
+                "UPDATE producto " +
+                        "SET stock_actual = stock_actual + ? " +
+                        "WHERE id = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+        ) {
 
             ps.setInt(1, cantidad);
+
             ps.setInt(2, idProducto);
 
-            int filas = ps.executeUpdate();
+            int filas =
+                    ps.executeUpdate();
 
             if (filas == 0) {
-                throw new SQLException("No se pudo actualizar el stock.");
+
+                throw new SQLException(
+                        "No se pudo actualizar el stock."
+                );
             }
 
             return true;
@@ -64,49 +99,42 @@ public class InventarioRepository {
     }
 
     // =========================
-    // 🔹 DISMINUIR STOCK (VALIDADO)
+    // 🔹 DISMINUIR STOCK
     // =========================
-    public boolean disminuirStock(Connection conn, int idProducto, int cantidad) throws SQLException {
+    public boolean disminuirStock(
+            Connection conn,
+            int idProducto,
+            int cantidad
+    ) throws SQLException {
 
-        String sql = "UPDATE inventario " +
-                "SET stock_actual = stock_actual - ? " +
-                "WHERE id_producto = ? AND stock_actual >= ?";
+        String sql =
+                "UPDATE producto " +
+                        "SET stock_actual = stock_actual - ? " +
+                        "WHERE id = ? " +
+                        "AND stock_actual >= ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+        ) {
 
             ps.setInt(1, cantidad);
+
             ps.setInt(2, idProducto);
+
             ps.setInt(3, cantidad);
 
-            int filas = ps.executeUpdate();
+            int filas =
+                    ps.executeUpdate();
 
             if (filas == 0) {
-                throw new SQLException("Stock insuficiente.");
+
+                throw new SQLException(
+                        "Stock insuficiente."
+                );
             }
 
             return true;
-        }
-    }
-
-    // =========================
-    // 🔹 CREAR REGISTRO INVENTARIO
-    // =========================
-    public boolean crearRegistro(int idProducto, int stockInicial, int stockMinimo) {
-
-        String sql = "INSERT INTO inventario (id_producto, stock_actual, stock_minimo) VALUES (?, ?, ?)";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setInt(1, idProducto);
-            ps.setInt(2, stockInicial);
-            ps.setInt(3, stockMinimo);
-
-            return ps.executeUpdate() > 0;
-
-        } catch (SQLException e) {
-            System.err.println("❌ Error creando inventario: " + e.getMessage());
-            return false;
         }
     }
 
@@ -115,25 +143,41 @@ public class InventarioRepository {
     // =========================
     public Map<Integer, Integer> listarStockBajo() {
 
-        Map<Integer, Integer> lista = new HashMap<>();
+        Map<Integer, Integer> lista =
+                new HashMap<>();
 
-        String sql = "SELECT id_producto, stock_actual " +
-                "FROM inventario " +
-                "WHERE stock_actual < stock_minimo";
+        String sql =
+                "SELECT id, stock_actual " +
+                        "FROM producto " +
+                        "WHERE stock_actual < stock_minimo";
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             Statement st = conn.createStatement();
-             ResultSet rs = st.executeQuery(sql)) {
+        try (
+
+                Connection conn =
+                        DatabaseConnection.getConnection();
+
+                Statement st =
+                        conn.createStatement();
+
+                ResultSet rs =
+                        st.executeQuery(sql)
+
+        ) {
 
             while (rs.next()) {
+
                 lista.put(
-                        rs.getInt("id_producto"),
+                        rs.getInt("id"),
                         rs.getInt("stock_actual")
                 );
             }
 
         } catch (SQLException e) {
-            System.err.println("❌ Error consultando stock bajo: " + e.getMessage());
+
+            System.err.println(
+                    "❌ Error consultando stock bajo: "
+                            + e.getMessage()
+            );
         }
 
         return lista;

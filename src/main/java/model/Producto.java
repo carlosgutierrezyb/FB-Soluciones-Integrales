@@ -57,6 +57,8 @@ public class Producto {
      */
     private String codigoReferencia;
 
+    private String estado;
+
     /**
      * Constructor vacío.
      * Necesario para frameworks y mapeo de datos desde BD.
@@ -110,6 +112,10 @@ public class Producto {
 
     public String getCodigoReferencia() {
         return codigoReferencia;
+    }
+
+    public String getEstado() {
+        return estado;
     }
 
     // =========================
@@ -179,6 +185,10 @@ public class Producto {
             throw new BusinessException("El código de referencia es obligatorio.");
         }
         this.codigoReferencia = codigoReferencia;
+    }
+
+    public void setEstado(String estado) {
+        this.estado = estado;
     }
 
     // =========================

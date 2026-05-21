@@ -18,50 +18,72 @@ import java.util.List;
 public class EntradaAlmacenController {
 
     private EntradaAlmacenService entradaService;
+
     private OrdenCompraService ordenService;
 
+    // =========================
+    // CONSTRUCTOR
+    // =========================
     public EntradaAlmacenController() {
-        this.entradaService = new EntradaAlmacenService();
-        this.ordenService = new OrdenCompraService();
+
+        this.entradaService =
+                new EntradaAlmacenService();
+
+        this.ordenService =
+                new OrdenCompraService();
     }
 
     // =========================
     // 🔹 ÓRDENES PENDIENTES
     // =========================
     public List<OrdenCompra> obtenerOrdenesPendientes() {
+
         return ordenService.obtenerOrdenesPendientes();
     }
 
     // =========================
     // 🔹 DETALLE DE ORDEN
     // =========================
-    public List<DetalleOrdenCompra> obtenerDetalleOrden(int idOrden) {
-        return ordenService.obtenerDetalleOrden(idOrden);
+    public List<DetalleOrdenCompra> obtenerDetalleOrden(
+            int idOrden
+    ) {
+
+        return ordenService.obtenerDetalleOrden(
+                idOrden
+        );
     }
 
     // =========================
     // 🔹 CANTIDAD RECIBIDA
     // =========================
-    public int obtenerCantidadRecibida(int idItem, int idOrden) {
-        return entradaService.obtenerCantidadRecibida(idItem, idOrden);
+    public int obtenerCantidadRecibida(
+            int idItem,
+            int idOrden
+    ) {
+
+        return entradaService.obtenerCantidadRecibida(
+                idItem,
+                idOrden
+        );
     }
 
     // =========================
-    // 🔥 REGISTRAR ENTRADA (CORREGIDO PRO)
+    // 🔥 REGISTRAR ENTRADA
     // =========================
     public String registrarEntrada(
             int idOrden,
             int idItem,
             int cantidad,
-            double precioCompra,
-            String numeroFactura
+            String numeroFactura,
+            String numeroRemision
     ) {
+
         return entradaService.registrarEntrada(
                 idOrden,
                 idItem,
                 cantidad,
-                precioCompra,
-                numeroFactura
+                numeroFactura,
+                numeroRemision
         );
     }
 }

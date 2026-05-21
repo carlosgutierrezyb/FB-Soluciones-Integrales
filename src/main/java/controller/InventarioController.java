@@ -10,14 +10,13 @@ import java.util.List;
 /**
  * Controlador encargado del módulo de Inventario.
  *
- * Responsabilidades:
+ * 🔥 RESPONSABILIDADES:
  * - Gestionar productos
  * - Gestionar categorías
+ * - Orquestar Vista ↔ Service
  *
- * ❌ NO maneja compras
- * ❌ NO contiene lógica de negocio
- *
- * ✔ Solo orquesta entre Vista y Services
+ * ❌ NO contiene SQL
+ * ❌ NO lógica de negocio
  */
 public class InventarioController {
 
@@ -26,67 +25,126 @@ public class InventarioController {
     // =========================
 
     private InventarioView vista;
+
     private ProductoService productoService;
 
-    /**
-     * Constructor vacío (compatibilidad)
-     */
+    // =========================
+    // 🔹 CONSTRUCTOR VACÍO
+    // =========================
     public InventarioController() {
+
         inicializarDependencias();
     }
 
-    /**
-     * Constructor con vista (MVC real)
-     */
-    public InventarioController(InventarioView vista) {
+    // =========================
+    // 🔹 CONSTRUCTOR MVC
+    // =========================
+    public InventarioController(
+            InventarioView vista
+    ) {
+
         this.vista = vista;
+
         inicializarDependencias();
+
         inicializarEventos();
     }
 
-    /**
-     * Inicializa servicios
-     */
+    // =========================
+    // 🔹 INICIALIZAR SERVICES
+    // =========================
     private void inicializarDependencias() {
-        this.productoService = new ProductoService();
+
+        this.productoService =
+                new ProductoService();
     }
 
-    /**
-     * Conecta eventos de la vista (opcional)
-     */
+    // =========================
+    // 🔹 EVENTOS
+    // =========================
     private void inicializarEventos() {
 
-        if (vista == null) return;
+        if (vista == null) {
 
-        // Aquí puedes conectar botones si lo necesitas
-        // (Actualmente ya lo manejas desde la vista, lo cual está bien)
+            return;
+        }
+
+        // Eventos futuros
     }
 
     // =========================
-    // PRODUCTOS
+    // 🔹 CREAR PRODUCTO
     // =========================
+    public String agregarNuevoProducto(
+            String nombre,
+            String stockStr,
+            String idCatStr,
+            String stockMinStr
+    ) {
 
-    public String agregarNuevoProducto(String nombre, String stockStr, String idCatStr, String stockMinStr) {
-        return productoService.agregarProducto(nombre, stockStr, idCatStr, stockMinStr);
+        return productoService.agregarProducto(
+                nombre,
+                stockStr,
+                idCatStr,
+                stockMinStr
+        );
     }
 
-    public String editarProducto(int id, String nombre, String idCatStr, String stockMinStr) {
-        return productoService.editarProducto(id, nombre, idCatStr, stockMinStr);
+    // =========================
+    // 🔹 EDITAR PRODUCTO
+    // =========================
+    public String editarProducto(
+            int id,
+            String nombre,
+            String idCatStr,
+            String stockMinStr
+    ) {
+
+        return productoService.editarProducto(
+                id,
+                nombre,
+                idCatStr,
+                stockMinStr
+        );
     }
 
+    // =========================
+    // 🔹 INACTIVAR PRODUCTO
+    // =========================
     public boolean eliminarProducto(int id) {
+
         return productoService.eliminarProducto(id);
     }
 
+    // =========================
+    // 🔹 REACTIVAR PRODUCTO
+    // =========================
+    public boolean reactivarProducto(int id) {
+
+        return productoService.reactivarProducto(id);
+    }
+
+    // =========================
+    // 🔹 LISTAR PRODUCTOS ACTIVOS
+    // =========================
     public List<Producto> obtenerInventario() {
+
         return productoService.listarProductos();
     }
 
     // =========================
-    // CATEGORÍAS
+    // 🔹 LISTAR PRODUCTOS INACTIVOS
     // =========================
+    public List<Producto> obtenerProductosInactivos() {
 
+        return productoService.listarProductosInactivos();
+    }
+
+    // =========================
+    // 🔹 LISTAR CATEGORÍAS
+    // =========================
     public List<Categoria> obtenerCategorias() {
+
         return productoService.listarCategorias();
     }
 }

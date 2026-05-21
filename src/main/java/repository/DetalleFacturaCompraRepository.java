@@ -4,105 +4,178 @@ import model.DetalleFacturaCompra;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
- * Repository de detalle de factura de compra.
+ * Repository detalle factura compra
  *
  * 🔥 ERP PRO:
- * - Guarda cada línea facturada
- * - Relaciona factura ↔ entrada ↔ producto
- * - Permite trazabilidad completa
- * - NO maneja lógica de negocio
- *
- * Tabla:
- * detalle_factura_compra
+ * - Maneja líneas facturadas
+ * - Soporta múltiples facturas por OC
+ * - Soporta facturación parcial
+ * - Controla trazabilidad:
+ *      factura ↔ entrada ↔ producto
  */
 public class DetalleFacturaCompraRepository {
 
     // =========================
-    // 🔹 GUARDAR DETALLE FACTURA
+    // 🔹 GUARDAR DETALLE
     // =========================
-    public boolean guardar(Connection conn, DetalleFacturaCompra detalle) throws SQLException {
+    public boolean guardar(
+            Connection conn,
+            DetalleFacturaCompra detalle
+    ) throws SQLException {
 
-        String sql = "INSERT INTO detalle_factura_compra ("
-                + "id_factura, "
-                + "id_entrada, "
-                + "id_item, "
-                + "cantidad_facturada, "
-                + "precio_unitario_factura, "
-                + "observacion"
-                + ") VALUES (?, ?, ?, ?, ?, ?)";
+        String sql =
+                "INSERT INTO detalle_factura_compra (" +
+                        "id_factura, " +
+                        "id_entrada, " +
+                        "id_item, " +
+                        "cantidad_facturada, " +
+                        "precio_unitario_factura, " +
+                        "observacion" +
+                        ") " +
+                        "VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (
 
-            ps.setInt(1, detalle.getIdFactura());
-            ps.setInt(2, detalle.getIdEntrada());
-            ps.setInt(3, detalle.getIdItem());
-            ps.setInt(4, detalle.getCantidadFacturada());
-            ps.setDouble(5, detalle.getPrecioUnitarioFactura());
-            ps.setString(6, detalle.getObservacion());
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
 
-            int filas = ps.executeUpdate();
+        ) {
+
+            ps.setInt(
+                    1,
+                    detalle.getIdFactura()
+            );
+
+            ps.setInt(
+                    2,
+                    detalle.getIdEntrada()
+            );
+
+            ps.setInt(
+                    3,
+                    detalle.getIdItem()
+            );
+
+            ps.setInt(
+                    4,
+                    detalle.getCantidadFacturada()
+            );
+
+            ps.setDouble(
+                    5,
+                    detalle.getPrecioUnitarioFactura()
+            );
+
+            ps.setString(
+                    6,
+                    detalle.getObservacion()
+            );
+
+            int filas =
+                    ps.executeUpdate();
 
             if (filas == 0) {
-                throw new SQLException("No se pudo guardar el detalle de factura.");
+
+                throw new SQLException(
+                        "No se pudo guardar detalle factura."
+                );
             }
 
-            System.out.println("✅ Detalle de factura registrado correctamente.");
+            System.out.println(
+                    "✅ Detalle factura registrado."
+            );
 
             return true;
         }
     }
 
     // =========================
-    // 🔹 GUARDAR MÚLTIPLES DETALLES
+    // 🔹 GUARDAR LOTE
     // =========================
     public boolean guardarLote(
+
             Connection conn,
-            java.util.List<DetalleFacturaCompra> detalles
+
+            List<DetalleFacturaCompra> detalles
+
     ) throws SQLException {
 
-        if (detalles == null || detalles.isEmpty()) {
-            throw new SQLException("No existen detalles para registrar.");
+        if (
+                detalles == null
+                        || detalles.isEmpty()
+        ) {
+
+            throw new SQLException(
+                    "No existen detalles."
+            );
         }
 
-        for (DetalleFacturaCompra detalle : detalles) {
+        for (
 
-            boolean ok = guardar(conn, detalle);
+                DetalleFacturaCompra detalle
+                : detalles
 
-            if (!ok) {
-                throw new SQLException(
-                        "Falló el registro de un detalle de factura."
-                );
-            }
+        ) {
+
+            guardar(
+                    conn,
+                    detalle
+            );
         }
 
         return true;
     }
 
     // =========================
-    // 🔹 VALIDAR DUPLICADO
+    // 🔹 VALIDAR SI YA EXISTE
+    // 🔥 misma factura + misma entrada
     // =========================
     public boolean existeDetalleFactura(
+
             Connection conn,
+
             int idFactura,
-            int idEntrada
+
+            int idEntrada,
+
+            int idItem
+
     ) throws SQLException {
 
-        String sql = "SELECT COUNT(*) AS total "
-                + "FROM detalle_factura_compra "
-                + "WHERE id_factura = ? "
-                + "AND id_entrada = ?";
+        String sql =
+                "SELECT COUNT(*) total " +
+                        "FROM detalle_factura_compra " +
+                        "WHERE id_factura = ? " +
+                        "AND id_entrada = ? " +
+                        "AND id_item = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+
+        ) {
 
             ps.setInt(1, idFactura);
+
             ps.setInt(2, idEntrada);
 
-            try (var rs = ps.executeQuery()) {
+            ps.setInt(3, idItem);
+
+            try (
+
+                    ResultSet rs =
+                            ps.executeQuery()
+
+            ) {
 
                 if (rs.next()) {
+
                     return rs.getInt("total") > 0;
                 }
             }
@@ -112,24 +185,83 @@ public class DetalleFacturaCompraRepository {
     }
 
     // =========================
-    // 🔹 ELIMINAR DETALLES POR FACTURA
+    // 🔹 TOTAL FACTURADO POR ITEM
     // =========================
-    public boolean eliminarPorFactura(
+    public int obtenerCantidadFacturadaItem(
+
             Connection conn,
-            int idFactura
+
+            int idOrden,
+
+            int idItem
+
     ) throws SQLException {
 
-        String sql = "DELETE FROM detalle_factura_compra "
-                + "WHERE id_factura = ?";
+        String sql =
+                "SELECT COALESCE(SUM(dfc.cantidad_facturada),0) total " +
+                        "FROM detalle_factura_compra dfc " +
+                        "INNER JOIN factura_compra fc " +
+                        "ON dfc.id_factura = fc.id " +
+                        "WHERE fc.id_orden = ? " +
+                        "AND dfc.id_item = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+
+        ) {
+
+            ps.setInt(1, idOrden);
+
+            ps.setInt(2, idItem);
+
+            try (
+
+                    ResultSet rs =
+                            ps.executeQuery()
+
+            ) {
+
+                if (rs.next()) {
+
+                    return rs.getInt("total");
+                }
+            }
+        }
+
+        return 0;
+    }
+
+    // =========================
+    // 🔹 ELIMINAR DETALLES FACTURA
+    // =========================
+    public boolean eliminarPorFactura(
+
+            Connection conn,
+
+            int idFactura
+
+    ) throws SQLException {
+
+        String sql =
+                "DELETE FROM detalle_factura_compra " +
+                        "WHERE id_factura = ?";
+
+        try (
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+
+        ) {
 
             ps.setInt(1, idFactura);
 
-            int filas = ps.executeUpdate();
+            int filas =
+                    ps.executeUpdate();
 
             System.out.println(
-                    "🗑 Detalles eliminados de factura: " + filas
+                    "🗑 Detalles eliminados: " + filas
             );
 
             return true;
@@ -137,29 +269,100 @@ public class DetalleFacturaCompraRepository {
     }
 
     // =========================
-    // 🔹 TOTAL FACTURADO POR FACTURA
+    // 🔹 TOTAL FACTURA
     // =========================
     public double obtenerTotalFactura(
+
             Connection conn,
+
             int idFactura
+
     ) throws SQLException {
 
-        String sql = "SELECT COALESCE(SUM(subtotal), 0) AS total "
-                + "FROM detalle_factura_compra "
-                + "WHERE id_factura = ?";
+        String sql =
+                "SELECT COALESCE(SUM(subtotal),0) total " +
+                        "FROM detalle_factura_compra " +
+                        "WHERE id_factura = ?";
 
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+
+        ) {
 
             ps.setInt(1, idFactura);
 
-            try (var rs = ps.executeQuery()) {
+            try (
+
+                    ResultSet rs =
+                            ps.executeQuery()
+
+            ) {
 
                 if (rs.next()) {
+
                     return rs.getDouble("total");
                 }
             }
         }
 
         return 0;
+    }
+
+    // =========================
+    // 🔹 VALIDAR SI OC ESTÁ COMPLETA
+    // =========================
+    public boolean ordenCompletamenteFacturada(
+
+            Connection conn,
+
+            int idOrden
+
+    ) throws SQLException {
+
+        String sql =
+                "SELECT " +
+                        "COALESCE(SUM(ea.cantidad_recibida),0) recibido, " +
+                        "COALESCE(SUM(dfc.cantidad_facturada),0) facturado " +
+                        "FROM entradas_almacen ea " +
+                        "LEFT JOIN factura_compra fc " +
+                        "ON ea.id_orden = fc.id_orden " +
+                        "LEFT JOIN detalle_factura_compra dfc " +
+                        "ON fc.id = dfc.id_factura " +
+                        "AND ea.id_item = dfc.id_item " +
+                        "WHERE ea.id_orden = ?";
+
+        try (
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+
+        ) {
+
+            ps.setInt(1, idOrden);
+
+            try (
+
+                    ResultSet rs =
+                            ps.executeQuery()
+
+            ) {
+
+                if (rs.next()) {
+
+                    int recibido =
+                            rs.getInt("recibido");
+
+                    int facturado =
+                            rs.getInt("facturado");
+
+                    return recibido > 0
+                            && recibido == facturado;
+                }
+            }
+        }
+
+        return false;
     }
 }

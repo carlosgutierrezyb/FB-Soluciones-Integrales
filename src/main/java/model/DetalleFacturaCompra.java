@@ -3,25 +3,32 @@ package model;
 import exception.BusinessException;
 
 /**
- * Modelo de detalle de factura de compra.
+ * Modelo Detalle Factura Compra
  *
  * 🔥 ERP PRO:
- * - Representa cada línea facturada
- * - Relaciona factura ↔ entrada ↔ producto
- * - Permite trazabilidad completa
- * - Controla cantidades y valores facturados
- *
- * Tabla:
- * detalle_factura_compra
+ * - Línea individual de factura
+ * - Relación:
+ *      Factura ↔ Entrada ↔ Producto
+ * - Soporta múltiples facturas por OC
+ * - Soporta facturación parcial
+ * - Maneja trazabilidad completa
  */
 public class DetalleFacturaCompra {
 
+    // =========================
+    // ATRIBUTOS
+    // =========================
+
     private int idDetalleFactura;
+
     private int idFactura;
+
     private int idEntrada;
+
     private int idItem;
 
     private int cantidadFacturada;
+
     private double precioUnitarioFactura;
 
     private String observacion;
@@ -55,7 +62,9 @@ public class DetalleFacturaCompra {
     }
 
     public double getSubtotal() {
-        return cantidadFacturada * precioUnitarioFactura;
+
+        return cantidadFacturada
+                * precioUnitarioFactura;
     }
 
     public String getObservacion() {
@@ -63,50 +72,98 @@ public class DetalleFacturaCompra {
     }
 
     // =========================
-    // SETTERS (VALIDADOS)
+    // SETTERS
     // =========================
 
-    public void setIdDetalleFactura(int idDetalleFactura) {
-        this.idDetalleFactura = idDetalleFactura;
+    public void setIdDetalleFactura(
+            int idDetalleFactura
+    ) {
+
+        this.idDetalleFactura =
+                idDetalleFactura;
     }
 
-    public void setIdFactura(int idFactura) {
+    public void setIdFactura(
+            int idFactura
+    ) {
+
         if (idFactura <= 0) {
-            throw new BusinessException("ID de factura inválido.");
+
+            throw new BusinessException(
+                    "ID factura inválido."
+            );
         }
-        this.idFactura = idFactura;
+
+        this.idFactura =
+                idFactura;
     }
 
-    public void setIdEntrada(int idEntrada) {
+    public void setIdEntrada(
+            int idEntrada
+    ) {
+
         if (idEntrada <= 0) {
-            throw new BusinessException("ID de entrada inválido.");
+
+            throw new BusinessException(
+                    "ID entrada inválido."
+            );
         }
-        this.idEntrada = idEntrada;
+
+        this.idEntrada =
+                idEntrada;
     }
 
-    public void setIdItem(int idItem) {
+    public void setIdItem(
+            int idItem
+    ) {
+
         if (idItem <= 0) {
-            throw new BusinessException("ID de producto inválido.");
+
+            throw new BusinessException(
+                    "ID producto inválido."
+            );
         }
-        this.idItem = idItem;
+
+        this.idItem =
+                idItem;
     }
 
-    public void setCantidadFacturada(int cantidadFacturada) {
+    public void setCantidadFacturada(
+            int cantidadFacturada
+    ) {
+
         if (cantidadFacturada <= 0) {
-            throw new BusinessException("La cantidad facturada debe ser mayor a cero.");
+
+            throw new BusinessException(
+                    "Cantidad facturada inválida."
+            );
         }
-        this.cantidadFacturada = cantidadFacturada;
+
+        this.cantidadFacturada =
+                cantidadFacturada;
     }
 
-    public void setPrecioUnitarioFactura(double precioUnitarioFactura) {
-        if (precioUnitarioFactura < 0) {
-            throw new BusinessException("El precio unitario no puede ser negativo.");
+    public void setPrecioUnitarioFactura(
+            double precioUnitarioFactura
+    ) {
+
+        if (precioUnitarioFactura <= 0) {
+
+            throw new BusinessException(
+                    "Precio unitario inválido."
+            );
         }
-        this.precioUnitarioFactura = precioUnitarioFactura;
+
+        this.precioUnitarioFactura =
+                precioUnitarioFactura;
     }
 
-    public void setObservacion(String observacion) {
-        this.observacion = observacion;
+    public void setObservacion(
+            String observacion
+    ) {
+
+        this.observacion =
+                observacion;
     }
 
     // =========================
@@ -115,14 +172,32 @@ public class DetalleFacturaCompra {
 
     @Override
     public String toString() {
-        return "DetalleFacturaCompra{" +
-                "idDetalleFactura=" + idDetalleFactura +
-                ", idFactura=" + idFactura +
-                ", idEntrada=" + idEntrada +
-                ", idItem=" + idItem +
-                ", cantidadFacturada=" + cantidadFacturada +
-                ", precioUnitarioFactura=" + precioUnitarioFactura +
-                ", subtotal=" + getSubtotal() +
-                '}';
+
+        return
+
+                "DetalleFacturaCompra{" +
+
+                        "idDetalleFactura=" +
+                        idDetalleFactura +
+
+                        ", idFactura=" +
+                        idFactura +
+
+                        ", idEntrada=" +
+                        idEntrada +
+
+                        ", idItem=" +
+                        idItem +
+
+                        ", cantidadFacturada=" +
+                        cantidadFacturada +
+
+                        ", precioUnitarioFactura=" +
+                        precioUnitarioFactura +
+
+                        ", subtotal=" +
+                        getSubtotal() +
+
+                        '}';
     }
 }

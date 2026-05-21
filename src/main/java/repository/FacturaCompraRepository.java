@@ -24,19 +24,20 @@ public class FacturaCompraRepository {
     public int crear(Connection conn, FacturaCompra factura) throws SQLException {
 
         String sql = "INSERT INTO factura_compra " +
-                "(id_proveedor, numero_factura, fecha, estado, observacion) " +
-                "VALUES (?, ?, ?, ?, ?)";
+                "(id_orden, id_proveedor, numero_factura, fecha, estado, observacion) " +
+                "VALUES (?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement ps = conn.prepareStatement(
                 sql,
                 Statement.RETURN_GENERATED_KEYS
         )) {
 
-            ps.setInt(1, factura.getIdProveedor());
-            ps.setString(2, factura.getNumeroFactura());
-            ps.setTimestamp(3, Timestamp.valueOf(factura.getFecha()));
-            ps.setString(4, factura.getEstado());
-            ps.setString(5, factura.getObservacion());
+            ps.setInt(1, factura.getIdOrden());
+            ps.setInt(2, factura.getIdProveedor());
+            ps.setString(3, factura.getNumeroFactura());
+            ps.setTimestamp(4, Timestamp.valueOf(factura.getFecha()));
+            ps.setString(5, factura.getEstado());
+            ps.setString(6, factura.getObservacion());
 
             int filas = ps.executeUpdate();
 

@@ -12,177 +12,417 @@ import java.sql.SQLException;
  * Repository de entradas de almacén.
  *
  * 🔥 ERP REAL:
- * - Registra cada entrada (histórico)
- * - Actualiza inventario usando InventarioRepository
- * - Permite consultar cantidades recibidas
- * - Soporta facturación contra entradas reales
+ * - Registra recepciones físicas
+ * - Actualiza inventario
+ * - Controla cantidades recibidas
+ * - Maneja trazabilidad:
+ *      • Remisión
+ *      • Factura proveedor
+ *
+ * ❌ NO lógica de negocio
  */
 public class EntradaAlmacenRepository {
 
     private InventarioRepository inventarioRepo;
 
     public EntradaAlmacenRepository() {
-        this.inventarioRepo = new InventarioRepository();
+
+        this.inventarioRepo =
+                new InventarioRepository();
     }
 
-    /**
-     * 🔥 Guarda entrada + actualiza inventario (PRO)
-     */
-    public boolean guardar(Connection conn, EntradaAlmacen entrada) {
+    // =========================
+    // 🔹 GUARDAR ENTRADA
+    // =========================
+    public boolean guardar(
+            Connection conn,
+            EntradaAlmacen entrada
+    ) {
 
-        String sqlEntrada = "INSERT INTO entradas_almacen " +
-                "(id_orden, id_item, cantidad_recibida, precio_compra_unitario, numero_factura) " +
-                "VALUES (?, ?, ?, ?, ?)";
+        String sql =
+                "INSERT INTO entradas_almacen "
+                        + "(id_orden, id_item, cantidad_recibida, "
+                        + "precio_compra_unitario, "
+                        + "numero_remision, numero_factura) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)";
 
-        try (PreparedStatement psEntrada = conn.prepareStatement(sqlEntrada)) {
+        try (
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+        ) {
 
-            System.out.println("📦 Guardando entrada de almacén...");
-
-            // =========================
-            // 🔹 1. INSERT ENTRDA
-            // =========================
-            psEntrada.setInt(1, entrada.getIdOrden());
-            psEntrada.setInt(2, entrada.getIdItem());
-            psEntrada.setInt(3, entrada.getCantidadRecibida());
-            psEntrada.setDouble(4, entrada.getPrecioCompraUnitario());
-            psEntrada.setString(5, entrada.getNumeroFactura());
-
-            int filasEntrada = psEntrada.executeUpdate();
-
-            if (filasEntrada == 0) {
-                throw new SQLException("No se pudo registrar la entrada.");
-            }
+            System.out.println(
+                    "📦 Guardando entrada de almacén..."
+            );
 
             // =========================
-            // 🔥 2. ACTUALIZAR INVENTARIO
+            // 🔹 INSERTAR ENTRADA
             // =========================
-            boolean actualizado = inventarioRepo.actualizarStock(
-                    conn,
-                    entrada.getIdItem(),
+
+            ps.setInt(
+                    1,
+                    entrada.getIdOrden()
+            );
+
+            ps.setInt(
+                    2,
+                    entrada.getIdItem()
+            );
+
+            ps.setInt(
+                    3,
                     entrada.getCantidadRecibida()
             );
 
-            if (!actualizado) {
-                throw new SQLException("No se pudo actualizar el inventario.");
+            ps.setDouble(
+                    4,
+                    entrada.getPrecioCompraUnitario()
+            );
+
+            ps.setString(
+                    5,
+                    entrada.getNumeroRemision()
+            );
+
+            ps.setString(
+                    6,
+                    entrada.getNumeroFactura()
+            );
+
+            int filas =
+                    ps.executeUpdate();
+
+            if (filas == 0) {
+
+                throw new SQLException(
+                        "No se pudo registrar la entrada."
+                );
             }
 
-            System.out.println("✅ Entrada registrada y stock actualizado correctamente.");
+            // =========================
+            // 🔥 ACTUALIZAR INVENTARIO
+            // =========================
+
+            boolean actualizado =
+                    inventarioRepo.actualizarStock(
+                            conn,
+                            entrada.getIdItem(),
+                            entrada.getCantidadRecibida()
+                    );
+
+            if (!actualizado) {
+
+                throw new SQLException(
+                        "No se pudo actualizar inventario."
+                );
+            }
+
+            System.out.println(
+                    "✅ Entrada registrada correctamente."
+            );
 
             return true;
 
         } catch (SQLException e) {
 
-            System.err.println("❌ Error guardando entrada: " + e.getMessage());
+            System.err.println(
+                    "❌ Error guardando entrada: "
+                            + e.getMessage()
+            );
+
             return false;
         }
     }
 
     // =========================
-    // 🔹 TOTAL RECIBIDO POR ITEM Y ORDEN
+    // 🔹 TOTAL RECIBIDO
+    // 🔥 USA MISMA TRANSACCIÓN
     // =========================
-    public int obtenerCantidadRecibida(int idItem, int idOrden) {
+    public int obtenerCantidadRecibida(
+            Connection conn,
+            int idItem,
+            int idOrden
+    ) throws SQLException {
 
-        String sql = "SELECT COALESCE(SUM(cantidad_recibida), 0) AS total " +
-                "FROM entradas_almacen " +
-                "WHERE id_item = ? AND id_orden = ?";
+        String sql =
+                "SELECT COALESCE(SUM(cantidad_recibida), 0) AS total "
+                        + "FROM entradas_almacen "
+                        + "WHERE id_item = ? "
+                        + "AND id_orden = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+        ) {
 
             ps.setInt(1, idItem);
+
             ps.setInt(2, idOrden);
 
             try (ResultSet rs = ps.executeQuery()) {
+
                 if (rs.next()) {
-                    return rs.getInt("total");
+
+                    int total =
+                            rs.getInt("total");
+
+                    System.out.println(
+                            "📦 Recibido OC "
+                                    + idOrden
+                                    + " ITEM "
+                                    + idItem
+                                    + ": "
+                                    + total
+                    );
+
+                    return total;
                 }
             }
-
-        } catch (SQLException e) {
-            System.err.println("❌ Error calculando cantidad recibida: " + e.getMessage());
         }
 
         return 0;
     }
 
     // =========================
-    // 🔹 OBTENER ID ITEM POR ENTRADA
+    // 🔹 MÉTODO LEGACY
     // =========================
-    public int obtenerIdItemPorEntrada(int idEntrada) {
+    public int obtenerCantidadRecibida(
+            int idItem,
+            int idOrden
+    ) {
 
-        String sql = "SELECT id_item " +
-                "FROM entradas_almacen " +
-                "WHERE id_entrada = ?";
+        try (
+                Connection conn =
+                        DatabaseConnection.getConnection()
+        ) {
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+            return obtenerCantidadRecibida(
+                    conn,
+                    idItem,
+                    idOrden
+            );
+
+        } catch (SQLException e) {
+
+            System.err.println(
+                    "❌ Error calculando recibido: "
+                            + e.getMessage()
+            );
+        }
+
+        return 0;
+    }
+
+    // =========================
+    // 🔹 OBTENER ID ITEM
+    // =========================
+    public int obtenerIdItemPorEntrada(
+            int idEntrada
+    ) {
+
+        String sql =
+                "SELECT id_item "
+                        + "FROM entradas_almacen "
+                        + "WHERE id_entrada = ?";
+
+        try (
+                Connection conn =
+                        DatabaseConnection.getConnection();
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+        ) {
 
             ps.setInt(1, idEntrada);
 
             try (ResultSet rs = ps.executeQuery()) {
+
                 if (rs.next()) {
+
                     return rs.getInt("id_item");
                 }
             }
 
         } catch (SQLException e) {
-            System.err.println("❌ Error obteniendo id_item: " + e.getMessage());
+
+            System.err.println(
+                    "❌ Error obteniendo item: "
+                            + e.getMessage()
+            );
         }
 
         return 0;
     }
 
     // =========================
-    // 🔹 OBTENER CANTIDAD POR ENTRADA
+    // 🔹 OBTENER CANTIDAD
     // =========================
-    public int obtenerCantidadPorEntrada(int idEntrada) {
+    public int obtenerCantidadPorEntrada(
+            int idEntrada
+    ) {
 
-        String sql = "SELECT cantidad_recibida " +
-                "FROM entradas_almacen " +
-                "WHERE id_entrada = ?";
+        String sql =
+                "SELECT cantidad_recibida "
+                        + "FROM entradas_almacen "
+                        + "WHERE id_entrada = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (
+                Connection conn =
+                        DatabaseConnection.getConnection();
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+        ) {
 
             ps.setInt(1, idEntrada);
 
             try (ResultSet rs = ps.executeQuery()) {
+
                 if (rs.next()) {
-                    return rs.getInt("cantidad_recibida");
+
+                    return rs.getInt(
+                            "cantidad_recibida"
+                    );
                 }
             }
 
         } catch (SQLException e) {
-            System.err.println("❌ Error obteniendo cantidad: " + e.getMessage());
+
+            System.err.println(
+                    "❌ Error obteniendo cantidad: "
+                            + e.getMessage()
+            );
         }
 
         return 0;
     }
 
     // =========================
-    // 🔹 OBTENER PRECIO POR ENTRADA
+    // 🔹 OBTENER PRECIO COMPRA
     // =========================
-    public double obtenerPrecioCompraPorEntrada(int idEntrada) {
+    public double obtenerPrecioCompraPorEntrada(
+            int idEntrada
+    ) {
 
-        String sql = "SELECT precio_compra_unitario " +
-                "FROM entradas_almacen " +
-                "WHERE id_entrada = ?";
+        String sql =
+                "SELECT precio_compra_unitario "
+                        + "FROM entradas_almacen "
+                        + "WHERE id_entrada = ?";
 
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (
+                Connection conn =
+                        DatabaseConnection.getConnection();
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+        ) {
 
             ps.setInt(1, idEntrada);
 
             try (ResultSet rs = ps.executeQuery()) {
+
                 if (rs.next()) {
-                    return rs.getDouble("precio_compra_unitario");
+
+                    return rs.getDouble(
+                            "precio_compra_unitario"
+                    );
                 }
             }
 
         } catch (SQLException e) {
-            System.err.println("❌ Error obteniendo precio de compra: " + e.getMessage());
+
+            System.err.println(
+                    "❌ Error obteniendo precio compra: "
+                            + e.getMessage()
+            );
         }
 
         return 0;
+    }
+
+    // =========================
+    // 🔹 OBTENER FACTURA
+    // =========================
+    public String obtenerFacturaPorEntrada(
+            int idEntrada
+    ) {
+
+        String sql =
+                "SELECT numero_factura "
+                        + "FROM entradas_almacen "
+                        + "WHERE id_entrada = ?";
+
+        try (
+                Connection conn =
+                        DatabaseConnection.getConnection();
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+        ) {
+
+            ps.setInt(1, idEntrada);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+
+                    return rs.getString(
+                            "numero_factura"
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+
+            System.err.println(
+                    "❌ Error obteniendo factura: "
+                            + e.getMessage()
+            );
+        }
+
+        return null;
+    }
+
+    // =========================
+    // 🔹 OBTENER REMISIÓN
+    // =========================
+    public String obtenerRemisionPorEntrada(
+            int idEntrada
+    ) {
+
+        String sql =
+                "SELECT numero_remision "
+                        + "FROM entradas_almacen "
+                        + "WHERE id_entrada = ?";
+
+        try (
+                Connection conn =
+                        DatabaseConnection.getConnection();
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+        ) {
+
+            ps.setInt(1, idEntrada);
+
+            try (ResultSet rs = ps.executeQuery()) {
+
+                if (rs.next()) {
+
+                    return rs.getString(
+                            "numero_remision"
+                    );
+                }
+            }
+
+        } catch (SQLException e) {
+
+            System.err.println(
+                    "❌ Error obteniendo remisión: "
+                            + e.getMessage()
+            );
+        }
+
+        return null;
     }
 }

@@ -13,18 +13,33 @@ import java.sql.Timestamp;
  * 🔥 RESPONSABILIDAD:
  * - Registrar lo que realmente llegó
  * - Base para actualización de stock
- * - Trazabilidad de costos
+ * - Trazabilidad logística
+ * - Trazabilidad documental
  */
 public class EntradaAlmacen {
 
     private int idEntrada;
+
     private int idOrden;
+
     private int idItem;
 
     private int cantidadRecibida;
+
+    /*
+     * 🔥 IMPORTANTE ERP
+     *
+     * El precio puede ser opcional
+     * porque la valorización real
+     * puede ocurrir en FacturaCompra.
+     */
     private double precioCompraUnitario;
 
+    // 🔥 DOCUMENTOS
     private String numeroFactura;
+
+    private String numeroRemision;
+
     private Timestamp fechaEntrada;
 
     // =========================
@@ -55,12 +70,16 @@ public class EntradaAlmacen {
         return numeroFactura;
     }
 
+    public String getNumeroRemision() {
+        return numeroRemision;
+    }
+
     public Timestamp getFechaEntrada() {
         return fechaEntrada;
     }
 
     // =========================
-    // SETTERS CON VALIDACIÓN
+    // SETTERS
     // =========================
 
     public void setIdEntrada(int idEntrada) {
@@ -68,42 +87,91 @@ public class EntradaAlmacen {
     }
 
     public void setIdOrden(int idOrden) {
+
         if (idOrden <= 0) {
-            throw new BusinessException("La orden es obligatoria.");
+
+            throw new BusinessException(
+                    "La orden es obligatoria."
+            );
         }
+
         this.idOrden = idOrden;
     }
 
     public void setIdItem(int idItem) {
+
         if (idItem <= 0) {
-            throw new BusinessException("El producto es obligatorio.");
+
+            throw new BusinessException(
+                    "El producto es obligatorio."
+            );
         }
+
         this.idItem = idItem;
     }
 
-    public void setCantidadRecibida(int cantidadRecibida) {
+    public void setCantidadRecibida(
+            int cantidadRecibida
+    ) {
+
         if (cantidadRecibida <= 0) {
-            throw new BusinessException("La cantidad debe ser mayor a cero.");
+
+            throw new BusinessException(
+                    "La cantidad debe ser mayor a cero."
+            );
         }
+
         this.cantidadRecibida = cantidadRecibida;
     }
 
-    public void setPrecioCompraUnitario(double precioCompraUnitario) {
-        if (precioCompraUnitario <= 0) {
-            throw new BusinessException("El precio debe ser mayor a cero.");
+    public void setPrecioCompraUnitario(
+            double precioCompraUnitario
+    ) {
+
+        /*
+         * 🔥 ERP REAL
+         *
+         * Puede venir en 0
+         * si todavía no se factura.
+         */
+        if (precioCompraUnitario < 0) {
+
+            throw new BusinessException(
+                    "El precio no puede ser negativo."
+            );
         }
-        this.precioCompraUnitario = precioCompraUnitario;
+
+        this.precioCompraUnitario =
+                precioCompraUnitario;
     }
 
-    public void setNumeroFactura(String numeroFactura) {
-        if (numeroFactura == null || numeroFactura.trim().isEmpty()) {
-            throw new BusinessException("La factura es obligatoria.");
-        }
-        this.numeroFactura = numeroFactura;
+    public void setNumeroFactura(
+            String numeroFactura
+    ) {
+
+        /*
+         * 🔥 Puede ser opcional
+         * durante entrada logística.
+         */
+
+        this.numeroFactura =
+                numeroFactura;
     }
 
-    public void setFechaEntrada(Timestamp fechaEntrada) {
-        this.fechaEntrada = fechaEntrada;
+    public void setNumeroRemision(
+            String numeroRemision
+    ) {
+
+        this.numeroRemision =
+                numeroRemision;
+    }
+
+    public void setFechaEntrada(
+            Timestamp fechaEntrada
+    ) {
+
+        this.fechaEntrada =
+                fechaEntrada;
     }
 
     // =========================
@@ -111,13 +179,19 @@ public class EntradaAlmacen {
     // =========================
 
     public double calcularTotal() {
-        return cantidadRecibida * precioCompraUnitario;
+
+        return cantidadRecibida
+                * precioCompraUnitario;
     }
 
     @Override
     public String toString() {
-        return "Entrada Orden #" + idOrden +
-                " | Item: " + idItem +
-                " | Cantidad: " + cantidadRecibida;
+
+        return "Entrada Orden #"
+                + idOrden
+                + " | Item: "
+                + idItem
+                + " | Cantidad: "
+                + cantidadRecibida;
     }
 }
