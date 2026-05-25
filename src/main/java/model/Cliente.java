@@ -45,6 +45,11 @@ public class Cliente {
         return idCliente;
     }
 
+    // 🔥 COMPATIBILIDAD ERP/UI
+    public int getId() {
+        return idCliente;
+    }
+
     public String getNombre() {
         return nombre;
     }
@@ -107,8 +112,10 @@ public class Cliente {
 
     public void setNombre(String nombre) {
 
-        if (nombre == null ||
-                nombre.trim().isEmpty()) {
+        if (
+                nombre == null
+                        || nombre.trim().isEmpty()
+        ) {
 
             throw new BusinessException(
                     "Nombre obligatorio."
@@ -123,8 +130,10 @@ public class Cliente {
             String identificacion
     ) {
 
-        if (identificacion == null ||
-                identificacion.trim().isEmpty()) {
+        if (
+                identificacion == null
+                        || identificacion.trim().isEmpty()
+        ) {
 
             throw new BusinessException(
                     "Identificación obligatoria."
@@ -207,8 +216,10 @@ public class Cliente {
             String estado
     ) {
 
-        if (estado == null ||
-                estado.trim().isEmpty()) {
+        if (
+                estado == null
+                        || estado.trim().isEmpty()
+        ) {
 
             estado = "ACTIVO";
         }
@@ -225,5 +236,37 @@ public class Cliente {
     public String toString() {
 
         return nombre;
+    }
+
+    // =========================
+    // EQUALS / HASHCODE
+    // =========================
+
+    @Override
+    public boolean equals(Object o) {
+
+        if (this == o) {
+
+            return true;
+        }
+
+        if (!(o instanceof Cliente)) {
+
+            return false;
+        }
+
+        Cliente cliente =
+                (Cliente) o;
+
+        return idCliente ==
+                cliente.idCliente;
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Integer.hashCode(
+                idCliente
+        );
     }
 }

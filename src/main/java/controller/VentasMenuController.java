@@ -1,6 +1,7 @@
 package controller;
 
 import view.ClienteListView;
+import view.OrdenServicioView;
 import view.VentasMenuView;
 
 import javax.swing.*;
@@ -17,7 +18,9 @@ public class VentasMenuController {
 
     private VentasMenuView vista;
 
-    public VentasMenuController(VentasMenuView vista) {
+    public VentasMenuController(
+            VentasMenuView vista
+    ) {
 
         this.vista = vista;
 
@@ -33,46 +36,49 @@ public class VentasMenuController {
         // 🔹 CLIENTES
         // =========================
         vista.getBtnClientes()
-                .addActionListener(e -> abrirClientes());
+                .addActionListener(
+                        e -> abrirClientes()
+                );
 
         // =========================
         // 🔹 ORDEN SERVICIO
         // =========================
         vista.getBtnOrdenServicio()
-                .addActionListener(e ->
-                        mostrarModuloEnConstruccion(
-                                "Crear Orden Servicio"
-                        )
+                .addActionListener(
+                        e -> abrirOrdenServicio()
                 );
 
         // =========================
         // 🔹 ÓRDENES SERVICIO
         // =========================
         vista.getBtnOrdenesServicio()
-                .addActionListener(e ->
-                        mostrarModuloEnConstruccion(
-                                "Órdenes Servicio"
-                        )
+                .addActionListener(
+                        e ->
+                                mostrarModuloEnConstruccion(
+                                        "Órdenes Servicio"
+                                )
                 );
 
         // =========================
         // 🔹 SALIDA ALMACÉN
         // =========================
         vista.getBtnSalidaAlmacen()
-                .addActionListener(e ->
-                        mostrarModuloEnConstruccion(
-                                "Salida Almacén"
-                        )
+                .addActionListener(
+                        e ->
+                                mostrarModuloEnConstruccion(
+                                        "Salida Almacén"
+                                )
                 );
 
         // =========================
         // 🔹 FACTURA VENTA
         // =========================
         vista.getBtnFacturaVenta()
-                .addActionListener(e ->
-                        mostrarModuloEnConstruccion(
-                                "Factura Venta"
-                        )
+                .addActionListener(
+                        e ->
+                                mostrarModuloEnConstruccion(
+                                        "Factura Venta"
+                                )
                 );
     }
 
@@ -95,6 +101,25 @@ public class VentasMenuController {
     }
 
     // =========================
+    // 🔹 ORDEN SERVICIO
+    // =========================
+    // =========================
+// 🔹 ORDEN SERVICIO
+// =========================
+    private void abrirOrdenServicio() {
+
+        OrdenServicioView view =
+                new OrdenServicioView();
+
+        OrdenServicioController controller =
+                new OrdenServicioController();
+
+        view.setController(controller);
+
+        view.setVisible(true);
+    }
+
+    // =========================
     // 🔧 UTIL
     // =========================
     private void mostrarModuloEnConstruccion(
@@ -103,7 +128,9 @@ public class VentasMenuController {
 
         JOptionPane.showMessageDialog(
                 vista,
-                "Módulo " + modulo + " en construcción"
+                "Módulo "
+                        + modulo
+                        + " en construcción"
         );
     }
 }

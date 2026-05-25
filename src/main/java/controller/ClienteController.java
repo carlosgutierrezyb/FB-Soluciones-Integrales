@@ -176,6 +176,14 @@ public class ClienteController {
     }
 
     // =========================
+    // 🔥 ALIAS ERP/UI
+    // =========================
+    public List<Cliente> listarTodos() {
+
+        return listarClientes();
+    }
+
+    // =========================
     // 🔹 BUSCAR POR ID
     // =========================
     public Cliente buscarClientePorId(

@@ -31,6 +31,7 @@ public class ClienteListView extends JFrame {
     private JButton btnEditar;
     private JButton btnInactivar;
     private JButton btnRefrescar;
+    private JButton btnDirecciones;
 
     private ClienteController controller;
 
@@ -160,6 +161,9 @@ public class ClienteListView extends JFrame {
         btnRefrescar =
                 new JButton("Refrescar");
 
+        btnDirecciones =
+                new JButton("Direcciones");
+
         // =========================
         // 🔥 ESTILOS
         // =========================
@@ -183,9 +187,16 @@ public class ClienteListView extends JFrame {
                 new Color(102, 102, 102)
         );
 
+        estilizarBoton(
+                btnDirecciones,
+                new Color(153, 102, 0)
+        );
+
         panelBotones.add(btnNuevo);
 
         panelBotones.add(btnEditar);
+
+        panelBotones.add(btnDirecciones);
 
         panelBotones.add(btnInactivar);
 
@@ -203,6 +214,10 @@ public class ClienteListView extends JFrame {
 
         btnEditar.addActionListener(
                 e -> editarCliente()
+        );
+
+        btnDirecciones.addActionListener(
+                e -> administrarDirecciones()
         );
 
         btnInactivar.addActionListener(
@@ -388,6 +403,53 @@ public class ClienteListView extends JFrame {
     }
 
     // =========================
+    // 🔹 DIRECCIONES CLIENTE
+    // =========================
+    private void administrarDirecciones() {
+
+        int fila =
+                tablaClientes.getSelectedRow();
+
+        if (fila == -1) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Seleccione un cliente."
+            );
+
+            return;
+        }
+
+        int idCliente =
+                (int) modeloTabla.getValueAt(
+                        fila,
+                        0
+                );
+
+        Cliente cliente =
+                controller.buscarClientePorId(
+                        idCliente
+                );
+
+        if (cliente == null) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "No se pudo cargar cliente."
+            );
+
+            return;
+        }
+
+        DireccionClienteListView view =
+                new DireccionClienteListView(
+                        cliente
+                );
+
+        view.setVisible(true);
+    }
+
+    // =========================
     // 🔧 ESTILOS
     // =========================
     private void estilizarBoton(
@@ -421,6 +483,10 @@ public class ClienteListView extends JFrame {
 
     public JButton getBtnEditar() {
         return btnEditar;
+    }
+
+    public JButton getBtnDirecciones() {
+        return btnDirecciones;
     }
 
     public JButton getBtnInactivar() {

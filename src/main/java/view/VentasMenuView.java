@@ -21,21 +21,32 @@ public class VentasMenuView extends JFrame {
     // BOTONES
     // =========================
     private JButton btnClientes;
+
     private JButton btnOrdenServicio;
+
     private JButton btnOrdenesServicio;
+
     private JButton btnSalidaAlmacen;
+
     private JButton btnFacturaVenta;
 
     public VentasMenuView() {
 
-        setTitle("F&B Soluciones Integrales - Módulo Ventas");
+        setTitle(
+                "F&B Soluciones Integrales - Módulo Ventas"
+        );
+
         setSize(750, 450);
 
         setLocationRelativeTo(null);
 
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(
+                JFrame.DISPOSE_ON_CLOSE
+        );
 
-        setLayout(new BorderLayout(10, 10));
+        setLayout(
+                new BorderLayout(10, 10)
+        );
 
         inicializarComponentes();
     }
@@ -48,13 +59,18 @@ public class VentasMenuView extends JFrame {
         // =========================
         // TÍTULO
         // =========================
-        JLabel titulo = new JLabel(
-                "Módulo de Ventas",
-                JLabel.CENTER
-        );
+        JLabel titulo =
+                new JLabel(
+                        "Módulo de Ventas",
+                        JLabel.CENTER
+                );
 
         titulo.setFont(
-                new Font("Segoe UI", Font.BOLD, 22)
+                new Font(
+                        "Segoe UI",
+                        Font.BOLD,
+                        22
+                )
         );
 
         titulo.setBorder(
@@ -66,14 +82,23 @@ public class VentasMenuView extends JFrame {
                 )
         );
 
-        add(titulo, BorderLayout.NORTH);
+        add(
+                titulo,
+                BorderLayout.NORTH
+        );
 
         // =========================
         // PANEL BOTONES
         // =========================
-        JPanel panelBotones = new JPanel(
-                new GridLayout(2, 3, 20, 20)
-        );
+        JPanel panelBotones =
+                new JPanel(
+                        new GridLayout(
+                                2,
+                                3,
+                                20,
+                                20
+                        )
+                );
 
         panelBotones.setBorder(
                 BorderFactory.createEmptyBorder(
@@ -115,12 +140,19 @@ public class VentasMenuView extends JFrame {
                 );
 
         panelBotones.add(btnClientes);
+
         panelBotones.add(btnOrdenServicio);
+
         panelBotones.add(btnOrdenesServicio);
+
         panelBotones.add(btnSalidaAlmacen);
+
         panelBotones.add(btnFacturaVenta);
 
-        add(panelBotones, BorderLayout.CENTER);
+        add(
+                panelBotones,
+                BorderLayout.CENTER
+        );
     }
 
     // =========================
@@ -131,10 +163,15 @@ public class VentasMenuView extends JFrame {
             Color color
     ) {
 
-        JButton btn = new JButton(texto);
+        JButton btn =
+                new JButton(texto);
 
         btn.setFont(
-                new Font("Segoe UI", Font.BOLD, 14)
+                new Font(
+                        "Segoe UI",
+                        Font.BOLD,
+                        14
+                )
         );
 
         btn.setBackground(color);
@@ -157,22 +194,27 @@ public class VentasMenuView extends JFrame {
     // =========================
 
     public JButton getBtnClientes() {
+
         return btnClientes;
     }
 
     public JButton getBtnOrdenServicio() {
+
         return btnOrdenServicio;
     }
 
     public JButton getBtnOrdenesServicio() {
+
         return btnOrdenesServicio;
     }
 
     public JButton getBtnSalidaAlmacen() {
+
         return btnSalidaAlmacen;
     }
 
     public JButton getBtnFacturaVenta() {
+
         return btnFacturaVenta;
     }
 }
