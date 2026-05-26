@@ -5,7 +5,7 @@ import exception.BusinessException;
 /**
  * Entidad Servicio.
  *
- * 🔥 ERP:
+ * 🔥 ERP F&B:
  * Catálogo de servicios ofrecidos.
  */
 public class Servicio {
@@ -16,9 +16,17 @@ public class Servicio {
 
     private int idServicio;
 
+    private String codigo;
+
     private String nombre;
 
     private String descripcion;
+
+    private String categoria;
+
+    private double precioBase;
+
+    private double tiempoEstimadoHoras;
 
     private boolean estado;
 
@@ -27,6 +35,8 @@ public class Servicio {
     // =========================
 
     public Servicio() {
+
+        this.estado = true;
     }
 
     public Servicio(
@@ -34,9 +44,11 @@ public class Servicio {
             String nombre
     ) {
 
-        this.idServicio = idServicio;
+        setIdServicio(idServicio);
 
-        this.nombre = nombre;
+        setNombre(nombre);
+
+        this.estado = true;
     }
 
     // =========================
@@ -54,6 +66,11 @@ public class Servicio {
         return idServicio;
     }
 
+    public String getCodigo() {
+
+        return codigo;
+    }
+
     public String getNombre() {
 
         return nombre;
@@ -62,6 +79,21 @@ public class Servicio {
     public String getDescripcion() {
 
         return descripcion;
+    }
+
+    public String getCategoria() {
+
+        return categoria;
+    }
+
+    public double getPrecioBase() {
+
+        return precioBase;
+    }
+
+    public double getTiempoEstimadoHoras() {
+
+        return tiempoEstimadoHoras;
     }
 
     public boolean isEstado() {
@@ -73,7 +105,9 @@ public class Servicio {
     // SETTERS
     // =========================
 
-    public void setIdServicio(int idServicio) {
+    public void setIdServicio(
+            int idServicio
+    ) {
 
         if (idServicio < 0) {
 
@@ -85,7 +119,26 @@ public class Servicio {
         this.idServicio = idServicio;
     }
 
-    public void setNombre(String nombre) {
+    public void setCodigo(
+            String codigo
+    ) {
+
+        if (
+                codigo == null
+                        || codigo.trim().isEmpty()
+        ) {
+
+            throw new BusinessException(
+                    "El código del servicio es obligatorio."
+            );
+        }
+
+        this.codigo = codigo.trim();
+    }
+
+    public void setNombre(
+            String nombre
+    ) {
 
         if (
                 nombre == null
@@ -104,7 +157,49 @@ public class Servicio {
             String descripcion
     ) {
 
-        this.descripcion = descripcion;
+        this.descripcion =
+                descripcion != null
+                        ? descripcion.trim()
+                        : null;
+    }
+
+    public void setCategoria(
+            String categoria
+    ) {
+
+        this.categoria =
+                categoria != null
+                        ? categoria.trim()
+                        : null;
+    }
+
+    public void setPrecioBase(
+            double precioBase
+    ) {
+
+        if (precioBase < 0) {
+
+            throw new BusinessException(
+                    "El precio base no puede ser negativo."
+            );
+        }
+
+        this.precioBase = precioBase;
+    }
+
+    public void setTiempoEstimadoHoras(
+            double tiempoEstimadoHoras
+    ) {
+
+        if (tiempoEstimadoHoras < 0) {
+
+            throw new BusinessException(
+                    "El tiempo estimado es inválido."
+            );
+        }
+
+        this.tiempoEstimadoHoras =
+                tiempoEstimadoHoras;
     }
 
     public void setEstado(

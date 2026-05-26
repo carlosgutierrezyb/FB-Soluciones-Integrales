@@ -147,4 +147,14 @@ public class InventarioController {
 
         return productoService.listarCategorias();
     }
+
+    // =========================
+    // 🔹 BUSCAR PRODUCTO POR ID
+    // =========================
+    public Producto buscarProductoPorId(
+            int id
+    ) {
+
+        return productoService.buscarProductoPorId(id);
+    }
 }

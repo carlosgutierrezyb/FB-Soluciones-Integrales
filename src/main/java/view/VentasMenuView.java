@@ -8,6 +8,7 @@ import java.awt.*;
  *
  * 🔥 RESPONSABILIDADES:
  * - Gestión de clientes
+ * - Gestión de servicios
  * - Órdenes de servicio
  * - Salida de almacén
  * - Facturación de ventas
@@ -20,7 +21,10 @@ public class VentasMenuView extends JFrame {
     // =========================
     // BOTONES
     // =========================
+
     private JButton btnClientes;
+
+    private JButton btnServicios;
 
     private JButton btnOrdenServicio;
 
@@ -30,13 +34,17 @@ public class VentasMenuView extends JFrame {
 
     private JButton btnFacturaVenta;
 
+    // =========================
+    // CONSTRUCTOR
+    // =========================
+
     public VentasMenuView() {
 
         setTitle(
                 "F&B Soluciones Integrales - Módulo Ventas"
         );
 
-        setSize(750, 450);
+        setSize(850, 500);
 
         setLocationRelativeTo(null);
 
@@ -54,11 +62,13 @@ public class VentasMenuView extends JFrame {
     // =========================
     // 🔹 UI
     // =========================
+
     private void inicializarComponentes() {
 
         // =========================
         // TÍTULO
         // =========================
+
         JLabel titulo =
                 new JLabel(
                         "Módulo de Ventas",
@@ -90,6 +100,7 @@ public class VentasMenuView extends JFrame {
         // =========================
         // PANEL BOTONES
         // =========================
+
         JPanel panelBotones =
                 new JPanel(
                         new GridLayout(
@@ -109,10 +120,20 @@ public class VentasMenuView extends JFrame {
                 )
         );
 
+        // =========================
+        // BOTONES
+        // =========================
+
         btnClientes =
                 crearBoton(
                         "Clientes",
                         new Color(0, 102, 204)
+                );
+
+        btnServicios =
+                crearBoton(
+                        "Servicios",
+                        new Color(102, 51, 153)
                 );
 
         btnOrdenServicio =
@@ -139,7 +160,13 @@ public class VentasMenuView extends JFrame {
                         new Color(153, 0, 153)
                 );
 
+        // =========================
+        // AGREGAR BOTONES
+        // =========================
+
         panelBotones.add(btnClientes);
+
+        panelBotones.add(btnServicios);
 
         panelBotones.add(btnOrdenServicio);
 
@@ -158,6 +185,7 @@ public class VentasMenuView extends JFrame {
     // =========================
     // 🔹 BOTÓN ESTILO ERP
     // =========================
+
     private JButton crearBoton(
             String texto,
             Color color
@@ -196,6 +224,11 @@ public class VentasMenuView extends JFrame {
     public JButton getBtnClientes() {
 
         return btnClientes;
+    }
+
+    public JButton getBtnServicios() {
+
+        return btnServicios;
     }
 
     public JButton getBtnOrdenServicio() {

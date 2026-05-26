@@ -96,7 +96,8 @@ public class ProductoRepository {
 
         String sql =
                 "UPDATE producto " +
-                        "SET nombre = ?, " +
+                        "SET codigo_referencia = ?, " +
+                        "nombre = ?, " +
                         "id_categoria = ?, " +
                         "stock_minimo = ? " +
                         "WHERE id = ?";
@@ -113,21 +114,26 @@ public class ProductoRepository {
 
             ps.setString(
                     1,
+                    p.getCodigoReferencia()
+            );
+
+            ps.setString(
+                    2,
                     p.getNombre()
             );
 
             ps.setInt(
-                    2,
+                    3,
                     p.getIdCategoria()
             );
 
             ps.setInt(
-                    3,
+                    4,
                     p.getStockMinimo()
             );
 
             ps.setInt(
-                    4,
+                    5,
                     p.getId()
             );
 
@@ -361,6 +367,7 @@ public class ProductoRepository {
     // 🔹 ALIAS
     // =========================
     public Producto obtenerPorId(int id) {
+
         return buscarPorId(id);
     }
 
@@ -412,10 +419,13 @@ public class ProductoRepository {
     ) {
 
         String sql =
-                "SELECT codigo_referencia " +
-                        "FROM producto " +
-                        "WHERE id_categoria = ? " +
-                        "ORDER BY id DESC " +
+                "SELECT p.codigo_referencia " +
+                        "FROM producto p " +
+                        "INNER JOIN categorias c " +
+                        "ON p.id_categoria = c.id_cat " +
+                        "WHERE p.id_categoria = ? " +
+                        "AND p.codigo_referencia LIKE CONCAT('PROD-', c.prefijo, '-%') " +
+                        "ORDER BY p.id DESC " +
                         "LIMIT 1";
 
         try (

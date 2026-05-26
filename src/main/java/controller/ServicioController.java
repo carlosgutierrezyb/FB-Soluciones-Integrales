@@ -10,12 +10,16 @@ import java.util.List;
  *
  * 🔥 ERP F&B:
  * - Comunicación View ↔ Service
- * - Catálogo servicios
- * - Base órdenes servicio
+ * - Gestión catálogo servicios
+ * - CRUD servicios
  */
 public class ServicioController {
 
-    private ServicioService service;
+    private final ServicioService service;
+
+    // =========================
+    // CONSTRUCTOR
+    // =========================
 
     public ServicioController() {
 
@@ -26,6 +30,7 @@ public class ServicioController {
     // =========================
     // 🔹 LISTAR ACTIVOS
     // =========================
+
     public List<Servicio> listarActivos() {
 
         return service.listarActivos();
@@ -34,6 +39,7 @@ public class ServicioController {
     // =========================
     // 🔹 LISTAR TODOS
     // =========================
+
     public List<Servicio> listarTodos() {
 
         return service.listarTodos();
@@ -42,6 +48,7 @@ public class ServicioController {
     // =========================
     // 🔹 BUSCAR POR ID
     // =========================
+
     public Servicio buscarPorId(
             int idServicio
     ) {
@@ -52,12 +59,41 @@ public class ServicioController {
     }
 
     // =========================
-    // 🔹 GUARDAR
+    // 🔹 GUARDAR DESDE VIEW
+    // 🔥 RECIBE OBJETO SERVICIO
     // =========================
+
+    public String guardarServicio(
+            Servicio servicio
+    ) {
+
+        try {
+
+            return service.guardarServicio(
+                    servicio
+            );
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return "Error registrando servicio.";
+        }
+    }
+
+    // =========================
+    // 🔹 GUARDAR POR CAMPOS
+    // 🔥 Compatibilidad
+    // =========================
+
     public String guardarServicio(
 
+            String codigo,
             String nombre,
             String descripcion,
+            String categoria,
+            double precioBase,
+            double tiempoEstimadoHoras,
             boolean estado
 
     ) {
@@ -67,12 +103,28 @@ public class ServicioController {
             Servicio servicio =
                     new Servicio();
 
+            servicio.setCodigo(
+                    codigo
+            );
+
             servicio.setNombre(
                     nombre
             );
 
             servicio.setDescripcion(
                     descripcion
+            );
+
+            servicio.setCategoria(
+                    categoria
+            );
+
+            servicio.setPrecioBase(
+                    precioBase
+            );
+
+            servicio.setTiempoEstimadoHoras(
+                    tiempoEstimadoHoras
             );
 
             servicio.setEstado(
@@ -87,7 +139,51 @@ public class ServicioController {
 
             e.printStackTrace();
 
-            return "Error en controller servicio.";
+            return "Error registrando servicio.";
+        }
+    }
+
+    // =========================
+    // 🔹 ACTUALIZAR
+    // =========================
+
+    public String actualizarServicio(
+            Servicio servicio
+    ) {
+
+        try {
+
+            return service.actualizarServicio(
+                    servicio
+            );
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return "Error actualizando servicio.";
+        }
+    }
+
+    // =========================
+    // 🔹 INACTIVAR
+    // =========================
+
+    public boolean inactivarServicio(
+            int idServicio
+    ) {
+
+        try {
+
+            return service.inactivarServicio(
+                    idServicio
+            );
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+
+            return false;
         }
     }
 }

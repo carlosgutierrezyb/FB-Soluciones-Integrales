@@ -403,6 +403,39 @@ public class InventarioView extends JFrame {
                                     )
                             );
 
+                            // =========================
+// 🔥 SELECCIONAR CATEGORÍA
+// =========================
+                            Producto producto =
+                                    controller.buscarProductoPorId(
+                                            idSeleccionado
+                                    );
+
+                            if (producto != null) {
+
+                                for (
+                                        int i = 0;
+                                        i < comboCategorias.getItemCount();
+                                        i++
+                                ) {
+
+                                    Categoria categoria =
+                                            comboCategorias.getItemAt(i);
+
+                                    if (
+                                            categoria.getId()
+                                                    == producto.getIdCategoria()
+                                    ) {
+
+                                        comboCategorias.setSelectedIndex(i);
+
+                                        break;
+                                    }
+                                }
+                            }
+
+
+
                             btnGuardar.setText(
                                     "Actualizar Cambios"
                             );

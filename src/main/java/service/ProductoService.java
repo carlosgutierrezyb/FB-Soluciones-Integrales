@@ -5,6 +5,7 @@ import model.Categoria;
 import model.Producto;
 import repository.CategoriaRepository;
 import repository.ProductoRepository;
+import util.CodigoGenerator;
 import util.ParseUtil;
 
 import java.util.List;
@@ -72,9 +73,38 @@ public class ProductoService {
                     stockMinimo
             );
 
-            String codigo =
-                    generarCodigoProducto(
+            // =========================
+            // 🔥 OBTENER CATEGORÍA
+            // =========================
+            Categoria categoria =
+                    categoriaRepo.buscarPorId(
                             idCategoria
+                    );
+
+            if (categoria == null) {
+
+                throw new BusinessException(
+                        "La categoría no existe."
+                );
+            }
+
+            // =========================
+            // 🔥 OBTENER ÚLTIMO CÓDIGO
+            // =========================
+            String ultimoCodigo =
+                    productoRepo.obtenerUltimoCodigoPorCategoria(
+                            idCategoria
+                    );
+
+            // =========================
+            // 🔥 GENERAR SKU
+            // EJ:
+            // PROD-DVR-0001
+            // =========================
+            String codigo =
+                    CodigoGenerator.generarCodigoProducto(
+                            categoria.getPrefijo(),
+                            ultimoCodigo
                     );
 
             Producto producto =
@@ -111,8 +141,8 @@ public class ProductoService {
     }
 
     // =========================
-    // 🔹 EDITAR PRODUCTO
-    // =========================
+// 🔹 EDITAR PRODUCTO
+// =========================
     public String editarProducto(
             int id,
             String nombre,
@@ -143,10 +173,46 @@ public class ProductoService {
                             "Stock mínimo"
                     );
 
+            // =========================
+            // 🔥 OBTENER CATEGORÍA
+            // =========================
+            Categoria categoria =
+                    categoriaRepo.buscarPorId(
+                            idCategoria
+                    );
+
+            if (categoria == null) {
+
+                throw new BusinessException(
+                        "La categoría no existe."
+                );
+            }
+
+            // =========================
+            // 🔥 GENERAR NUEVO SKU
+            // =========================
+            String ultimoCodigo =
+                    productoRepo.obtenerUltimoCodigoPorCategoria(
+                            idCategoria
+                    );
+
+            String codigo =
+                    CodigoGenerator.generarCodigoProducto(
+                            categoria.getPrefijo(),
+                            ultimoCodigo
+                    );
+
+            // =========================
+            // 🔥 ARMAR PRODUCTO
+            // =========================
             Producto p =
                     new Producto();
 
             p.setId(id);
+
+            p.setCodigoReferencia(
+                    codigo
+            );
 
             p.setNombre(nombre);
 
@@ -154,6 +220,9 @@ public class ProductoService {
 
             p.setStockMinimo(stockMinimo);
 
+            // =========================
+            // 🔥 ACTUALIZAR
+            // =========================
             boolean actualizado =
                     productoRepo.actualizar(p);
 
@@ -303,55 +372,13 @@ public class ProductoService {
     }
 
     // =========================
-    // 🔹 GENERAR SKU
+    // 🔹 BUSCAR PRODUCTO POR ID
     // =========================
-    private String generarCodigoProducto(
-            int idCategoria
+    public Producto buscarProductoPorId(
+            int id
     ) {
 
-        String ultimoCodigo =
-                productoRepo.obtenerUltimoCodigoPorCategoria(
-                        idCategoria
-                );
-
-        int nuevoCorrelativo = 1;
-
-        if (ultimoCodigo != null) {
-
-            try {
-
-                String[] partes =
-                        ultimoCodigo.split("-");
-
-                int ultimoNumero =
-                        Integer.parseInt(
-                                partes[1]
-                        );
-
-                nuevoCorrelativo =
-                        ultimoNumero + 1;
-
-            } catch (Exception e) {
-
-                throw new BusinessException(
-                        "Error generando código."
-                );
-            }
-        }
-
-        String prefijo =
-                String.format(
-                        "%02d",
-                        idCategoria
-                );
-
-        String correlativo =
-                String.format(
-                        "%04d",
-                        nuevoCorrelativo
-                );
-
-        return prefijo + "-" + correlativo;
+        return productoRepo.buscarPorId(id);
     }
 
     // =========================

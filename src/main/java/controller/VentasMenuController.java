@@ -2,6 +2,7 @@ package controller;
 
 import view.ClienteListView;
 import view.OrdenServicioView;
+import view.ServicioListView;
 import view.VentasMenuView;
 
 import javax.swing.*;
@@ -16,7 +17,11 @@ import javax.swing.*;
  */
 public class VentasMenuController {
 
-    private VentasMenuView vista;
+    private final VentasMenuView vista;
+
+    // =========================
+    // CONSTRUCTOR
+    // =========================
 
     public VentasMenuController(
             VentasMenuView vista
@@ -30,19 +35,31 @@ public class VentasMenuController {
     // =========================
     // 🔹 EVENTOS
     // =========================
+
     private void inicializarEventos() {
 
         // =========================
         // 🔹 CLIENTES
         // =========================
+
         vista.getBtnClientes()
                 .addActionListener(
                         e -> abrirClientes()
                 );
 
         // =========================
+        // 🔹 SERVICIOS
+        // =========================
+
+        vista.getBtnServicios()
+                .addActionListener(
+                        e -> abrirServicios()
+                );
+
+        // =========================
         // 🔹 ORDEN SERVICIO
         // =========================
+
         vista.getBtnOrdenServicio()
                 .addActionListener(
                         e -> abrirOrdenServicio()
@@ -51,6 +68,7 @@ public class VentasMenuController {
         // =========================
         // 🔹 ÓRDENES SERVICIO
         // =========================
+
         vista.getBtnOrdenesServicio()
                 .addActionListener(
                         e ->
@@ -62,6 +80,7 @@ public class VentasMenuController {
         // =========================
         // 🔹 SALIDA ALMACÉN
         // =========================
+
         vista.getBtnSalidaAlmacen()
                 .addActionListener(
                         e ->
@@ -73,6 +92,7 @@ public class VentasMenuController {
         // =========================
         // 🔹 FACTURA VENTA
         // =========================
+
         vista.getBtnFacturaVenta()
                 .addActionListener(
                         e ->
@@ -85,6 +105,7 @@ public class VentasMenuController {
     // =========================
     // 🔹 CLIENTES
     // =========================
+
     private void abrirClientes() {
 
         ClienteListView view =
@@ -101,11 +122,28 @@ public class VentasMenuController {
     }
 
     // =========================
+    // 🔹 SERVICIOS
+    // =========================
+
+    private void abrirServicios() {
+
+        ServicioListView view =
+                new ServicioListView();
+
+        ServicioController controller =
+                new ServicioController();
+
+        view.setController(controller);
+
+        view.cargarServicios();
+
+        view.setVisible(true);
+    }
+
+    // =========================
     // 🔹 ORDEN SERVICIO
     // =========================
-    // =========================
-// 🔹 ORDEN SERVICIO
-// =========================
+
     private void abrirOrdenServicio() {
 
         OrdenServicioView view =
@@ -122,6 +160,7 @@ public class VentasMenuController {
     // =========================
     // 🔧 UTIL
     // =========================
+
     private void mostrarModuloEnConstruccion(
             String modulo
     ) {
