@@ -5,9 +5,12 @@ import exception.BusinessException;
 /**
  * Detalle de Orden de Servicio.
  *
- * 🔥 ERP:
- * Representa los servicios incluidos
- * dentro de una orden de servicio.
+ * 🔥 ERP F&B
+ * Soporta:
+ * - Servicios
+ * - Productos
+ * - Materiales
+ * - Facturación futura
  */
 public class DetalleOrdenServicio {
 
@@ -19,16 +22,28 @@ public class DetalleOrdenServicio {
 
     private int idOrdenServicio;
 
-    private int idServicio;
+    // 🔥 NUEVOS ATRIBUTOS INTEGRADOS
+    private Integer idServicio;
 
-    // 🔥 NUEVO
-    private String nombreServicio;
+    private Integer idProducto;
+
+    // 🔥 TIPO ITEM
+    // SERVICIO / PRODUCTO
+    private String tipoItem;
+
+    // 🔥 REFERENCIA UNIFICADA (Reemplaza a nombreServicio y nombreProducto)
+    private String nombreReferencia;
+
+    // =========================
+    // GENERAL
+    // =========================
+
+    private String codigoReferencia;
 
     private int cantidad;
 
     private String observacion;
 
-    // 🔥 FUTURO FACTURACIÓN
     private double precioUnitario;
 
     // =========================
@@ -43,13 +58,24 @@ public class DetalleOrdenServicio {
         return idOrdenServicio;
     }
 
-    public int getIdServicio() {
+    public Integer getIdServicio() {
         return idServicio;
     }
 
-    // 🔥 NUEVO
-    public String getNombreServicio() {
-        return nombreServicio;
+    public Integer getIdProducto() {
+        return idProducto;
+    }
+
+    public String getTipoItem() {
+        return tipoItem;
+    }
+
+    public String getNombreReferencia() {
+        return nombreReferencia;
+    }
+
+    public String getCodigoReferencia() {
+        return codigoReferencia;
     }
 
     public int getCantidad() {
@@ -69,44 +95,56 @@ public class DetalleOrdenServicio {
     // =========================
 
     public void setIdDetalle(int idDetalle) {
-
         this.idDetalle = idDetalle;
     }
 
-    public void setIdOrdenServicio(
-            int idOrdenServicio
-    ) {
+    public void setIdOrdenServicio(int idOrdenServicio) {
 
         if (idOrdenServicio <= 0) {
 
             throw new BusinessException(
-                    "Orden de servicio inválida."
+                    "Orden inválida."
             );
         }
 
-        this.idOrdenServicio =
-                idOrdenServicio;
+        this.idOrdenServicio = idOrdenServicio;
     }
 
-    public void setIdServicio(int idServicio) {
-
-        if (idServicio <= 0) {
-
-            throw new BusinessException(
-                    "Servicio inválido."
-            );
-        }
-
+    public void setIdServicio(Integer idServicio) {
         this.idServicio = idServicio;
     }
 
-    // 🔥 NUEVO
-    public void setNombreServicio(
-            String nombreServicio
+    public void setIdProducto(Integer idProducto) {
+        this.idProducto = idProducto;
+    }
+
+    public void setTipoItem(String tipoItem) {
+
+        if (
+                tipoItem == null
+                        || tipoItem.trim().isEmpty()
+        ) {
+
+            throw new BusinessException(
+                    "Tipo de item obligatorio."
+            );
+        }
+
+        this.tipoItem = tipoItem;
+    }
+
+    public void setNombreReferencia(
+            String nombreReferencia
+    ) {
+        this.nombreReferencia = nombreReferencia;
+    }
+
+    public void setCodigoReferencia(
+            String codigoReferencia
     ) {
 
-        this.nombreServicio =
-                nombreServicio;
+        this.codigoReferencia =
+                codigoReferencia;
     }
 
     public void setCantidad(int cantidad) {
@@ -125,8 +163,7 @@ public class DetalleOrdenServicio {
             String observacion
     ) {
 
-        this.observacion =
-                observacion;
+        this.observacion = observacion;
     }
 
     public void setPrecioUnitario(
@@ -140,19 +177,18 @@ public class DetalleOrdenServicio {
             );
         }
 
-        this.precioUnitario =
-                precioUnitario;
+        this.precioUnitario = precioUnitario;
     }
 
     // =========================
-    // DEBUG / UI
+    // UI
     // =========================
 
     @Override
     public String toString() {
 
-        return nombreServicio != null
-                ? nombreServicio
-                : String.valueOf(idServicio);
+        return nombreReferencia != null
+                ? nombreReferencia
+                : "Detalle";
     }
 }

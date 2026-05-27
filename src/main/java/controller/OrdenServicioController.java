@@ -18,7 +18,11 @@ import java.util.List;
  */
 public class OrdenServicioController {
 
-    private OrdenServicioService service;
+    private final OrdenServicioService service;
+
+    // =========================
+    // CONSTRUCTOR
+    // =========================
 
     public OrdenServicioController() {
 
@@ -65,6 +69,21 @@ public class OrdenServicioController {
 
                 observaciones,
 
+                detalles
+        );
+    }
+
+    // =========================
+    // 🔹 CREAR DIRECTO
+    // =========================
+
+    public String crearOrden(
+            OrdenServicio orden,
+            List<DetalleOrdenServicio> detalles
+    ) {
+
+        return service.crearOrden(
+                orden,
                 detalles
         );
     }

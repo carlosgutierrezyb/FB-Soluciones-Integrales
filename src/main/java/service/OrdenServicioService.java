@@ -19,12 +19,13 @@ import java.util.List;
  * - Control de estados
  * - Flujo operativo
  * - Programación de servicios
+ * - Servicios + Productos
  */
 public class OrdenServicioService {
 
-    private OrdenServicioRepository ordenRepo;
+    private final OrdenServicioRepository ordenRepo;
 
-    private DetalleOrdenServicioRepository detalleRepo;
+    private final DetalleOrdenServicioRepository detalleRepo;
 
     public OrdenServicioService() {
 
@@ -126,7 +127,9 @@ public class OrdenServicioService {
                             || orden.getEstado().trim().isEmpty()
             ) {
 
-                orden.setEstado("Pendiente");
+                orden.setEstado(
+                        "Pendiente"
+                );
             }
 
             // =========================
@@ -147,12 +150,14 @@ public class OrdenServicioService {
             }
 
             // =========================
-            // ASIGNAR ORDEN A DETALLES
+            // ASIGNAR ID ORDEN
             // =========================
 
             for (DetalleOrdenServicio d : detalles) {
 
-                d.setIdOrdenServicio(idOrden);
+                d.setIdOrdenServicio(
+                        idOrden
+                );
             }
 
             // =========================
@@ -171,6 +176,10 @@ public class OrdenServicioService {
                         "Error guardando detalle."
                 );
             }
+
+            // =========================
+            // COMMIT
+            // =========================
 
             conn.commit();
 
@@ -304,8 +313,8 @@ public class OrdenServicioService {
     }
 
     // =========================
-    // 🔥 VALIDAR DETALLES
-    // =========================
+// 🔥 VALIDAR DETALLES
+// =========================
     private void validarDetalles(
             List<DetalleOrdenServicio> detalles
     ) {
@@ -316,18 +325,74 @@ public class OrdenServicioService {
         ) {
 
             throw new BusinessException(
-                    "Debe agregar servicios."
+                    "Debe agregar servicios o productos."
             );
         }
 
         for (DetalleOrdenServicio d : detalles) {
 
-            if (d.getIdServicio() <= 0) {
+            // =========================
+            // VALIDAR TIPO
+            // =========================
+
+            if (
+                    d.getTipoItem() == null
+                            || d.getTipoItem().trim().isEmpty()
+            ) {
 
                 throw new BusinessException(
-                        "Servicio inválido."
+                        "Tipo de ítem inválido."
                 );
             }
+
+            // =========================
+            // VALIDAR SERVICIO
+            // =========================
+
+            if (
+                    d.getTipoItem().equalsIgnoreCase("SERVICIO")
+            ) {
+
+                if (
+                        d.getIdServicio() == null
+                                || d.getIdServicio() <= 0
+                ) {
+
+                    throw new BusinessException(
+                            "Servicio inválido."
+                    );
+                }
+            }
+
+            // =========================
+            // VALIDAR PRODUCTO
+            // =========================
+
+            else if (
+                    d.getTipoItem().equalsIgnoreCase("PRODUCTO")
+            ) {
+
+                if (
+                        d.getIdProducto() == null
+                                || d.getIdProducto() <= 0
+                ) {
+
+                    throw new BusinessException(
+                            "Producto inválido."
+                    );
+                }
+            }
+
+            else {
+
+                throw new BusinessException(
+                        "Tipo de ítem desconocido."
+                );
+            }
+
+            // =========================
+            // VALIDAR CANTIDAD
+            // =========================
 
             if (d.getCantidad() <= 0) {
 
@@ -335,6 +400,10 @@ public class OrdenServicioService {
                         "Cantidad inválida."
                 );
             }
+
+            // =========================
+            // VALIDAR PRECIO
+            // =========================
 
             if (d.getPrecioUnitario() < 0) {
 

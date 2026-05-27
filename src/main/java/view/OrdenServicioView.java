@@ -2,11 +2,13 @@ package view;
 
 import controller.ClienteController;
 import controller.DireccionClienteController;
+import controller.InventarioController;
 import controller.OrdenServicioController;
 import controller.ServicioController;
 import model.Cliente;
 import model.DetalleOrdenServicio;
 import model.DireccionCliente;
+import model.Producto;
 import model.Servicio;
 
 import com.toedter.calendar.JDateChooser;
@@ -24,6 +26,7 @@ import java.util.List;
  * 🔥 ERP F&B:
  * - Crear OS
  * - Agregar servicios
+ * - Agregar productos
  * - Programación
  * - Direcciones múltiples
  */
@@ -38,11 +41,22 @@ public class OrdenServicioView extends JFrame {
     private JComboBox<DireccionCliente>
             comboDirecciones;
 
+    // 🔥 SERVICIOS
     private JComboBox<Servicio> comboServicios;
 
-    private JComboBox<String> comboPrioridad;
+    private JTextField txtCantidadServicio;
 
-    private JTextField txtCantidad;
+    private JButton btnAgregarServicio;
+
+    // 🔥 PRODUCTOS
+    private JComboBox<Producto> comboProductos;
+
+    private JTextField txtCantidadProducto;
+
+    private JButton btnAgregarProducto;
+
+    // 🔥 GENERALES
+    private JComboBox<String> comboPrioridad;
 
     private JTextField txtContacto;
 
@@ -55,8 +69,6 @@ public class OrdenServicioView extends JFrame {
     private JTable tabla;
 
     private DefaultTableModel modelo;
-
-    private JButton btnAgregar;
 
     private JButton btnEliminar;
 
@@ -75,7 +87,7 @@ public class OrdenServicioView extends JFrame {
     private OrdenServicioController controller;
 
     // =========================
-    // SET CONTROLLER
+    // CONTROLLER
     // =========================
 
     public void setController(
@@ -95,7 +107,7 @@ public class OrdenServicioView extends JFrame {
                 "F&B Soluciones Integrales - Orden Servicio"
         );
 
-        setSize(1050, 720);
+        setSize(1150, 760);
 
         setLocationRelativeTo(null);
 
@@ -113,7 +125,7 @@ public class OrdenServicioView extends JFrame {
     }
 
     // =========================
-    // COMPONENTES
+    // UI
     // =========================
 
     private void inicializarComponentes() {
@@ -121,7 +133,7 @@ public class OrdenServicioView extends JFrame {
         JPanel panelFormulario =
                 new JPanel(
                         new GridLayout(
-                                9,
+                                12,
                                 2,
                                 10,
                                 10
@@ -134,6 +146,10 @@ public class OrdenServicioView extends JFrame {
                 )
         );
 
+        // =========================
+        // COMPONENTES
+        // =========================
+
         comboClientes =
                 new JComboBox<>();
 
@@ -143,15 +159,31 @@ public class OrdenServicioView extends JFrame {
         comboServicios =
                 new JComboBox<>();
 
+        comboProductos =
+                new JComboBox<>();
+
+        txtCantidadServicio =
+                new JTextField();
+
+        txtCantidadProducto =
+                new JTextField();
+
+        btnAgregarServicio =
+                new JButton(
+                        "Agregar Servicio ➕"
+                );
+
+        btnAgregarProducto =
+                new JButton(
+                        "Agregar Producto ➕"
+                );
+
         comboPrioridad =
                 new JComboBox<>();
 
         comboPrioridad.addItem("Alta");
         comboPrioridad.addItem("Media");
         comboPrioridad.addItem("Baja");
-
-        txtCantidad =
-                new JTextField();
 
         txtContacto =
                 new JTextField();
@@ -166,23 +198,12 @@ public class OrdenServicioView extends JFrame {
 
         txtObservaciones.setWrapStyleWord(true);
 
-        // 🔥 CALENDARIO
         dateChooser =
                 new JDateChooser();
 
         dateChooser.setDateFormatString(
                 "yyyy-MM-dd"
         );
-
-        btnAgregar =
-                new JButton(
-                        "Agregar Servicio ➕"
-                );
-
-        btnEliminar =
-                new JButton(
-                        "Eliminar ❌"
-                );
 
         // =========================
         // FORMULARIO
@@ -200,6 +221,10 @@ public class OrdenServicioView extends JFrame {
 
         panelFormulario.add(comboDirecciones);
 
+        // =========================
+        // SERVICIOS
+        // =========================
+
         panelFormulario.add(
                 new JLabel("Servicio:")
         );
@@ -207,10 +232,42 @@ public class OrdenServicioView extends JFrame {
         panelFormulario.add(comboServicios);
 
         panelFormulario.add(
-                new JLabel("Cantidad:")
+                new JLabel("Cantidad Servicio:")
         );
 
-        panelFormulario.add(txtCantidad);
+        panelFormulario.add(txtCantidadServicio);
+
+        panelFormulario.add(
+                new JLabel("")
+        );
+
+        panelFormulario.add(btnAgregarServicio);
+
+        // =========================
+        // PRODUCTOS
+        // =========================
+
+        panelFormulario.add(
+                new JLabel("Producto:")
+        );
+
+        panelFormulario.add(comboProductos);
+
+        panelFormulario.add(
+                new JLabel("Cantidad Producto:")
+        );
+
+        panelFormulario.add(txtCantidadProducto);
+
+        panelFormulario.add(
+                new JLabel("")
+        );
+
+        panelFormulario.add(btnAgregarProducto);
+
+        // =========================
+        // FECHA
+        // =========================
 
         panelFormulario.add(
                 new JLabel("Fecha Programada:")
@@ -218,11 +275,19 @@ public class OrdenServicioView extends JFrame {
 
         panelFormulario.add(dateChooser);
 
+        // =========================
+        // PRIORIDAD
+        // =========================
+
         panelFormulario.add(
                 new JLabel("Prioridad:")
         );
 
         panelFormulario.add(comboPrioridad);
+
+        // =========================
+        // CONTACTO
+        // =========================
 
         panelFormulario.add(
                 new JLabel("Nombre Contacto:")
@@ -248,7 +313,8 @@ public class OrdenServicioView extends JFrame {
         modelo =
                 new DefaultTableModel(
                         new Object[]{
-                                "Servicio",
+                                "Tipo",
+                                "Descripción",
                                 "Cantidad"
                         },
                         0
@@ -276,7 +342,7 @@ public class OrdenServicioView extends JFrame {
 
         panelCentro.setBorder(
                 BorderFactory.createTitledBorder(
-                        "Servicios Agregados"
+                        "Items Agregados"
                 )
         );
 
@@ -288,7 +354,10 @@ public class OrdenServicioView extends JFrame {
         JPanel panelAcciones =
                 new JPanel();
 
-        panelAcciones.add(btnAgregar);
+        btnEliminar =
+                new JButton(
+                        "Eliminar ❌"
+                );
 
         panelAcciones.add(btnEliminar);
 
@@ -367,12 +436,16 @@ public class OrdenServicioView extends JFrame {
         // EVENTOS
         // =========================
 
-        btnAgregar.addActionListener(
+        btnAgregarServicio.addActionListener(
                 e -> agregarServicio()
         );
 
+        btnAgregarProducto.addActionListener(
+                e -> agregarProducto()
+        );
+
         btnEliminar.addActionListener(
-                e -> eliminarServicio()
+                e -> eliminarItem()
         );
 
         btnRegistrar.addActionListener(
@@ -383,12 +456,10 @@ public class OrdenServicioView extends JFrame {
                 e -> limpiar()
         );
 
-        // 🔥 AUTO CARGA DIRECCIONES
         comboClientes.addActionListener(
                 e -> cargarDireccionesCliente()
         );
 
-        // 🔥 AUTO COMPLETAR CONTACTO
         comboDirecciones.addActionListener(
                 e -> cargarContactoDireccion()
         );
@@ -403,6 +474,8 @@ public class OrdenServicioView extends JFrame {
         cargarClientes();
 
         cargarServicios();
+
+        cargarProductos();
     }
 
     // =========================
@@ -461,7 +534,7 @@ public class OrdenServicioView extends JFrame {
     }
 
     // =========================
-    // CONTACTOS
+    // CONTACTO
     // =========================
 
     private void cargarContactoDireccion() {
@@ -509,6 +582,26 @@ public class OrdenServicioView extends JFrame {
     }
 
     // =========================
+    // PRODUCTOS
+    // =========================
+
+    private void cargarProductos() {
+
+        comboProductos.removeAllItems();
+
+        InventarioController controller =
+                new InventarioController();
+
+        List<Producto> lista =
+                controller.obtenerInventario();
+
+        for (Producto p : lista) {
+
+            comboProductos.addItem(p);
+        }
+    }
+
+    // =========================
     // AGREGAR SERVICIO
     // =========================
 
@@ -532,7 +625,9 @@ public class OrdenServicioView extends JFrame {
 
             int cantidad =
                     Integer.parseInt(
-                            txtCantidad.getText().trim()
+                            txtCantidadServicio
+                                    .getText()
+                                    .trim()
                     );
 
             if (cantidad <= 0) {
@@ -545,29 +640,115 @@ public class OrdenServicioView extends JFrame {
                 return;
             }
 
-            modelo.addRow(
-                    new Object[]{
-                            servicio.getNombre(),
-                            cantidad
-                    }
-            );
-
             DetalleOrdenServicio detalle =
                     new DetalleOrdenServicio();
+
+            detalle.setTipoItem(
+                    "SERVICIO"
+            );
 
             detalle.setIdServicio(
                     servicio.getIdServicio()
             );
 
-            detalle.setNombreServicio(
+            detalle.setNombreReferencia(
                     servicio.getNombre()
             );
 
-            detalle.setCantidad(cantidad);
+            detalle.setCantidad(
+                    cantidad
+            );
 
             listaDetalles.add(detalle);
 
-            txtCantidad.setText("");
+            modelo.addRow(
+                    new Object[]{
+                            "SERVICIO",
+                            servicio.getNombre(),
+                            cantidad
+                    }
+            );
+
+            txtCantidadServicio.setText("");
+
+        } catch (Exception e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Cantidad inválida."
+            );
+        }
+    }
+
+    // =========================
+    // AGREGAR PRODUCTO
+    // =========================
+
+    private void agregarProducto() {
+
+        Producto producto =
+                (Producto)
+                        comboProductos.getSelectedItem();
+
+        if (producto == null) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Seleccione un producto."
+            );
+
+            return;
+        }
+
+        try {
+
+            int cantidad =
+                    Integer.parseInt(
+                            txtCantidadProducto
+                                    .getText()
+                                    .trim()
+                    );
+
+            if (cantidad <= 0) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Cantidad inválida."
+                );
+
+                return;
+            }
+
+            DetalleOrdenServicio detalle =
+                    new DetalleOrdenServicio();
+
+            detalle.setTipoItem(
+                    "PRODUCTO"
+            );
+
+            detalle.setIdProducto(
+                    producto.getId()
+            );
+
+            detalle.setNombreReferencia(
+                    producto.getNombre()
+            );
+
+            detalle.setCantidad(
+                    cantidad
+            );
+
+            listaDetalles.add(detalle);
+
+            modelo.addRow(
+                    new Object[]{
+                            "PRODUCTO",
+                            producto.getNombre(),
+                            cantidad
+                    }
+            );
+
+            txtCantidadProducto.setText("");
 
         } catch (Exception e) {
 
@@ -582,7 +763,7 @@ public class OrdenServicioView extends JFrame {
     // ELIMINAR
     // =========================
 
-    private void eliminarServicio() {
+    private void eliminarItem() {
 
         int fila =
                 tabla.getSelectedRow();
@@ -628,7 +809,7 @@ public class OrdenServicioView extends JFrame {
 
                 JOptionPane.showMessageDialog(
                         this,
-                        "Debe agregar servicios."
+                        "Debe agregar items."
                 );
 
                 return;
@@ -717,7 +898,9 @@ public class OrdenServicioView extends JFrame {
 
     private void limpiar() {
 
-        txtCantidad.setText("");
+        txtCantidadServicio.setText("");
+
+        txtCantidadProducto.setText("");
 
         txtContacto.setText("");
 

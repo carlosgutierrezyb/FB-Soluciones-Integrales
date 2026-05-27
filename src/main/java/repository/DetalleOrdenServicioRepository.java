@@ -9,6 +9,12 @@ import java.util.List;
 
 /**
  * Repository de detalle de órdenes de servicio.
+ *
+ * 🔥 ERP F&B:
+ * Soporta:
+ * - Servicios
+ * - Productos
+ * - Órdenes híbridas
  */
 public class DetalleOrdenServicioRepository {
 
@@ -27,19 +33,25 @@ public class DetalleOrdenServicioRepository {
             );
         }
 
+        // 🔥 SQL CORREGIDO: Ajustado a las columnas reales de la tabla
         String sql =
-                "INSERT INTO detalle_orden_servicio "
-                        + "("
+                "INSERT INTO detalle_orden_servicio ("
                         + "id_orden_servicio, "
+                        + "tipo_item, "
                         + "id_servicio, "
+                        + "id_producto, "
+                        + "codigo_referencia, "
                         + "cantidad, "
+                        + "precio_unitario, "
                         + "observacion"
                         + ") "
-                        + "VALUES (?, ?, ?, ?)";
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (
+
                 PreparedStatement ps =
                         conn.prepareStatement(sql)
+
         ) {
 
             for (DetalleOrdenServicio d : lista) {
@@ -56,28 +68,82 @@ public class DetalleOrdenServicioRepository {
                         d.getIdOrdenServicio()
                 );
 
-                ps.setInt(
+                ps.setString(
                         2,
-                        d.getIdServicio()
+                        d.getTipoItem()
+                );
+
+                // =========================
+                // SERVICIO
+                // =========================
+                if ("SERVICIO".equals(d.getTipoItem())) {
+
+                    ps.setInt(
+                            3,
+                            d.getIdServicio()
+                    );
+
+                } else {
+
+                    ps.setNull(
+                            3,
+                            Types.INTEGER
+                    );
+                }
+
+                // =========================
+                // PRODUCTO
+                // =========================
+                if ("PRODUCTO".equals(d.getTipoItem())) {
+
+                    ps.setInt(
+                            4,
+                            d.getIdProducto()
+                    );
+
+                } else {
+
+                    ps.setNull(
+                            4,
+                            Types.INTEGER
+                    );
+                }
+
+                // =========================
+                // GENERALES
+                // =========================
+                ps.setString(
+                        5,
+                        d.getCodigoReferencia()
                 );
 
                 ps.setInt(
-                        3,
+                        6,
                         d.getCantidad()
                 );
 
+                ps.setDouble(
+                        7,
+                        d.getPrecioUnitario()
+                );
+
                 ps.setString(
-                        4,
+                        8,
                         d.getObservacion()
                 );
 
-                ps.addBatch();
+                addBatchOpcional(ps);
             }
 
             ps.executeBatch();
 
             return true;
         }
+    }
+
+    // Auxiliar interno para encapsular la excepción del Batch
+    private void addBatchOpcional(PreparedStatement ps) throws SQLException {
+        ps.addBatch();
     }
 
     // =========================
@@ -91,17 +157,9 @@ public class DetalleOrdenServicioRepository {
                 new ArrayList<>();
 
         String sql =
-                "SELECT "
-                        + "d.id_detalle, "
-                        + "d.id_orden_servicio, "
-                        + "d.id_servicio, "
-                        + "s.nombre AS nombre_servicio, "
-                        + "d.cantidad, "
-                        + "d.observacion "
-                        + "FROM detalle_orden_servicio d "
-                        + "INNER JOIN servicios s "
-                        + "ON d.id_servicio = s.id_servicio "
-                        + "WHERE d.id_orden_servicio = ?";
+                "SELECT * "
+                        + "FROM detalle_orden_servicio "
+                        + "WHERE id_orden_servicio = ?";
 
         try (
 
@@ -128,31 +186,7 @@ public class DetalleOrdenServicioRepository {
                 while (rs.next()) {
 
                     DetalleOrdenServicio d =
-                            new DetalleOrdenServicio();
-
-                    d.setIdDetalle(
-                            rs.getInt("id_detalle")
-                    );
-
-                    d.setIdOrdenServicio(
-                            rs.getInt("id_orden_servicio")
-                    );
-
-                    d.setIdServicio(
-                            rs.getInt("id_servicio")
-                    );
-
-                    d.setNombreServicio(
-                            rs.getString("nombre_servicio")
-                    );
-
-                    d.setCantidad(
-                            rs.getInt("cantidad")
-                    );
-
-                    d.setObservacion(
-                            rs.getString("observacion")
-                    );
+                            mapearDetalle(rs);
 
                     lista.add(d);
                 }
@@ -170,26 +204,23 @@ public class DetalleOrdenServicioRepository {
     }
 
     // =========================
-    // 🔹 OBTENER SERVICIO
+    // 🔹 OBTENER ITEM
     // =========================
-    public DetalleOrdenServicio obtenerPorOrdenYServicio(
+    public DetalleOrdenServicio obtenerPorOrdenYReferencia(
             int idOrdenServicio,
-            int idServicio
+            String tipoItem,
+            int idReferencia
     ) {
 
+        // 🔥 CORREGIDO: Filtra dinámicamente por la columna correspondiente al tipo
+        String columnaId = "SERVICIO".equals(tipoItem) ? "id_servicio" : "id_producto";
+
         String sql =
-                "SELECT "
-                        + "d.id_detalle, "
-                        + "d.id_orden_servicio, "
-                        + "d.id_servicio, "
-                        + "s.nombre AS nombre_servicio, "
-                        + "d.cantidad, "
-                        + "d.observacion "
-                        + "FROM detalle_orden_servicio d "
-                        + "INNER JOIN servicios s "
-                        + "ON d.id_servicio = s.id_servicio "
-                        + "WHERE d.id_orden_servicio = ? "
-                        + "AND d.id_servicio = ?";
+                "SELECT * "
+                        + "FROM detalle_orden_servicio "
+                        + "WHERE id_orden_servicio = ? "
+                        + "AND tipo_item = ? "
+                        + "AND " + columnaId + " = ?";
 
         try (
 
@@ -206,9 +237,14 @@ public class DetalleOrdenServicioRepository {
                     idOrdenServicio
             );
 
-            ps.setInt(
+            ps.setString(
                     2,
-                    idServicio
+                    tipoItem
+            );
+
+            ps.setInt(
+                    3,
+                    idReferencia
             );
 
             try (
@@ -220,34 +256,7 @@ public class DetalleOrdenServicioRepository {
 
                 if (rs.next()) {
 
-                    DetalleOrdenServicio d =
-                            new DetalleOrdenServicio();
-
-                    d.setIdDetalle(
-                            rs.getInt("id_detalle")
-                    );
-
-                    d.setIdOrdenServicio(
-                            rs.getInt("id_orden_servicio")
-                    );
-
-                    d.setIdServicio(
-                            rs.getInt("id_servicio")
-                    );
-
-                    d.setNombreServicio(
-                            rs.getString("nombre_servicio")
-                    );
-
-                    d.setCantidad(
-                            rs.getInt("cantidad")
-                    );
-
-                    d.setObservacion(
-                            rs.getString("observacion")
-                    );
-
-                    return d;
+                    return mapearDetalle(rs);
                 }
             }
 
@@ -268,7 +277,8 @@ public class DetalleOrdenServicioRepository {
     public boolean actualizarCantidad(
             Connection conn,
             int idOrdenServicio,
-            int idServicio,
+            String tipoItem,
+            int idReferencia,
             int nuevaCantidad
     ) throws SQLException {
 
@@ -279,11 +289,15 @@ public class DetalleOrdenServicioRepository {
             );
         }
 
+        // 🔥 CORREGIDO: Apunta a la columna correcta del tipo de ítem
+        String columnaId = "SERVICIO".equals(tipoItem) ? "id_servicio" : "id_producto";
+
         String sql =
                 "UPDATE detalle_orden_servicio "
                         + "SET cantidad = ? "
                         + "WHERE id_orden_servicio = ? "
-                        + "AND id_servicio = ?";
+                        + "AND tipo_item = ? "
+                        + "AND " + columnaId + " = ?";
 
         try (
 
@@ -302,9 +316,14 @@ public class DetalleOrdenServicioRepository {
                     idOrdenServicio
             );
 
-            ps.setInt(
+            ps.setString(
                     3,
-                    idServicio
+                    tipoItem
+            );
+
+            ps.setInt(
+                    4,
+                    idReferencia
             );
 
             int filas =
@@ -318,7 +337,7 @@ public class DetalleOrdenServicioRepository {
             }
 
             System.out.println(
-                    "✏️ Cantidad servicio actualizada."
+                    "✏️ Cantidad actualizada."
             );
 
             return true;
@@ -326,18 +345,23 @@ public class DetalleOrdenServicioRepository {
     }
 
     // =========================
-    // 🔥 ELIMINAR SERVICIO
+    // 🔥 ELIMINAR ITEM
     // =========================
-    public boolean eliminarServicio(
+    public boolean eliminarItem(
             Connection conn,
             int idOrdenServicio,
-            int idServicio
+            String tipoItem,
+            int idReferencia
     ) throws SQLException {
+
+        // 🔥 CORREGIDO: Apunta a la columna correcta del tipo de ítem
+        String columnaId = "SERVICIO".equals(tipoItem) ? "id_servicio" : "id_producto";
 
         String sql =
                 "DELETE FROM detalle_orden_servicio "
                         + "WHERE id_orden_servicio = ? "
-                        + "AND id_servicio = ?";
+                        + "AND tipo_item = ? "
+                        + "AND " + columnaId + " = ?";
 
         try (
 
@@ -351,9 +375,14 @@ public class DetalleOrdenServicioRepository {
                     idOrdenServicio
             );
 
-            ps.setInt(
+            ps.setString(
                     2,
-                    idServicio
+                    tipoItem
+            );
+
+            ps.setInt(
+                    3,
+                    idReferencia
             );
 
             int filas =
@@ -362,12 +391,12 @@ public class DetalleOrdenServicioRepository {
             if (filas == 0) {
 
                 throw new SQLException(
-                        "No se pudo eliminar el servicio."
+                        "No se pudo eliminar el item."
                 );
             }
 
             System.out.println(
-                    "🗑️ Servicio eliminado correctamente."
+                    "🗑️ Item eliminado correctamente."
             );
 
             return true;
@@ -375,9 +404,9 @@ public class DetalleOrdenServicioRepository {
     }
 
     // =========================
-    // 🔥 TOTAL SERVICIOS
+    // 🔥 TOTAL ITEMS
     // =========================
-    public int obtenerTotalServicios(
+    public int obtenerTotalItems(
             int idOrdenServicio
     ) {
 
@@ -418,11 +447,68 @@ public class DetalleOrdenServicioRepository {
         } catch (SQLException e) {
 
             System.err.println(
-                    "❌ Error calculando total servicios: "
+                    "❌ Error calculando total items: "
                             + e.getMessage()
             );
         }
 
         return 0;
+    }
+
+    // =========================
+    // 🔥 MAPPER
+    // =========================
+    private DetalleOrdenServicio mapearDetalle(
+            ResultSet rs
+    ) throws SQLException {
+
+        DetalleOrdenServicio d =
+                new DetalleOrdenServicio();
+
+        d.setIdDetalle(
+                rs.getInt("id_detalle")
+        );
+
+        d.setIdOrdenServicio(
+                rs.getInt("id_orden_servicio")
+        );
+
+        d.setTipoItem(
+                rs.getString("tipo_item")
+        );
+
+        int idServicio =
+                rs.getInt("id_servicio");
+
+        if (!rs.wasNull()) {
+
+            d.setIdServicio(idServicio);
+        }
+
+        int idProducto =
+                rs.getInt("id_producto");
+
+        if (!rs.wasNull()) {
+
+            d.setIdProducto(idProducto);
+        }
+
+        d.setCodigoReferencia(
+                rs.getString("codigo_referencia")
+        );
+
+        d.setCantidad(
+                rs.getInt("cantidad")
+        );
+
+        d.setPrecioUnitario(
+                rs.getDouble("precio_unitario")
+        );
+
+        d.setObservacion(
+                rs.getString("observacion")
+        );
+
+        return d;
     }
 }
