@@ -16,6 +16,7 @@ import java.util.List;
  * - Crear servicios
  * - Editar servicios
  * - Inactivar servicios
+ * - Mostrar SKU y categoría
  */
 public class ServicioListView extends JFrame {
 
@@ -47,7 +48,7 @@ public class ServicioListView extends JFrame {
                 "ERP F&B - Servicios"
         );
 
-        setSize(1000, 500);
+        setSize(1200, 500);
 
         setLocationRelativeTo(null);
 
@@ -118,8 +119,12 @@ public class ServicioListView extends JFrame {
         String[] columnas = {
 
                 "ID",
+                "Código SKU",
                 "Nombre",
+                "Categoría",
                 "Descripción",
+                "Precio Base",
+                "Tiempo Estimado",
                 "Estado"
         };
 
@@ -143,6 +148,11 @@ public class ServicioListView extends JFrame {
                 new JTable(modeloTabla);
 
         tablaServicios.setRowHeight(25);
+
+        tablaServicios
+                .getColumnModel()
+                .getColumn(1)
+                .setPreferredWidth(140);
 
         JScrollPane scroll =
                 new JScrollPane(tablaServicios);
@@ -250,15 +260,21 @@ public class ServicioListView extends JFrame {
             modeloTabla.addRow(
                     new Object[]{
 
-                            s.getIdServicio(),
+                            s.getId(),
+
+                            s.getCodigoReferencia(),
 
                             s.getNombre(),
 
+                            s.getNombreCategoria(),
+
                             s.getDescripcion(),
 
-                            s.isEstado()
-                                    ? "Activo"
-                                    : "Inactivo"
+                            s.getPrecioBase(),
+
+                            s.getTiempoEstimadoHoras(),
+
+                            s.getEstado()
                     }
             );
         }
@@ -274,6 +290,8 @@ public class ServicioListView extends JFrame {
                 new ServicioView(this);
 
         view.setController(controller);
+
+        view.cargarCategorias();
 
         view.setVisible(true);
 
@@ -325,6 +343,9 @@ public class ServicioListView extends JFrame {
 
         view.setController(controller);
 
+        view.cargarCategorias();
+
+        // 🔥 CARGA AUTOMÁTICA DE DATOS
         view.cargarServicio(servicio);
 
         view.setVisible(true);

@@ -1,10 +1,12 @@
 package view;
 
 import controller.ServicioController;
+import model.Categoria;
 import model.Servicio;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 /**
  * Vista formulario servicios.
@@ -20,13 +22,12 @@ public class ServicioView extends JDialog {
     // CONTROLES
     // =========================
 
-    private JTextField txtCodigo;
-
     private JTextField txtNombre;
 
     private JTextArea txtDescripcion;
 
-    private JTextField txtCategoria;
+    // 🔥 ACTUALIZADO: ComboBox tipado correctamente
+    private JComboBox<Categoria> comboCategorias;
 
     private JTextField txtPrecioBase;
 
@@ -83,6 +84,30 @@ public class ServicioView extends JDialog {
     ) {
 
         this.controller = controller;
+
+        cargarCategorias();
+    }
+
+    // =========================
+    // CARGAR CATEGORÍAS
+    // =========================
+
+    public void cargarCategorias() {
+
+        if (controller == null) {
+
+            return;
+        }
+
+        comboCategorias.removeAllItems();
+
+        List<Categoria> lista =
+                controller.obtenerCategorias();
+
+        for (Categoria c : lista) {
+
+            comboCategorias.addItem(c);
+        }
     }
 
     // =========================
@@ -118,9 +143,6 @@ public class ServicioView extends JDialog {
         // CONTROLES
         // =========================
 
-        txtCodigo =
-                new JTextField();
-
         txtNombre =
                 new JTextField();
 
@@ -131,8 +153,9 @@ public class ServicioView extends JDialog {
 
         txtDescripcion.setWrapStyleWord(true);
 
-        txtCategoria =
-                new JTextField();
+        // 🔥 ASIGNACIÓN CORRECTA
+        comboCategorias =
+                new JComboBox<>();
 
         txtPrecioBase =
                 new JTextField();
@@ -153,25 +176,6 @@ public class ServicioView extends JDialog {
         gbc.gridy = 0;
 
         panelFormulario.add(
-                new JLabel("Código:"),
-                gbc
-        );
-
-        gbc.gridx = 1;
-
-        panelFormulario.add(
-                txtCodigo,
-                gbc
-        );
-
-        // =========================
-        // FILA 2
-        // =========================
-
-        gbc.gridx = 0;
-        gbc.gridy++;
-
-        panelFormulario.add(
                 new JLabel("Nombre:"),
                 gbc
         );
@@ -184,7 +188,7 @@ public class ServicioView extends JDialog {
         );
 
         // =========================
-        // FILA 3
+        // FILA 2
         // =========================
 
         gbc.gridx = 0;
@@ -203,7 +207,7 @@ public class ServicioView extends JDialog {
         );
 
         // =========================
-        // FILA 4
+        // FILA 3
         // =========================
 
         gbc.gridx = 0;
@@ -217,12 +221,12 @@ public class ServicioView extends JDialog {
         gbc.gridx = 1;
 
         panelFormulario.add(
-                txtCategoria,
+                comboCategorias,
                 gbc
         );
 
         // =========================
-        // FILA 5
+        // FILA 4
         // =========================
 
         gbc.gridx = 0;
@@ -241,14 +245,14 @@ public class ServicioView extends JDialog {
         );
 
         // =========================
-        // FILA 6
+        // FILA 5
         // =========================
 
         gbc.gridx = 0;
         gbc.gridy++;
 
         panelFormulario.add(
-                new JLabel("Tiempo Estimado:"),
+                new JLabel("Tiempo Estimado (Horas):"),
                 gbc
         );
 
@@ -260,7 +264,7 @@ public class ServicioView extends JDialog {
         );
 
         // =========================
-        // FILA 7
+        // FILA 6
         // =========================
 
         gbc.gridx = 1;
@@ -326,12 +330,6 @@ public class ServicioView extends JDialog {
         this.servicioEditando =
                 servicio;
 
-        txtCodigo.setText(
-                String.valueOf(
-                        servicio.getIdServicio()
-                )
-        );
-
         txtNombre.setText(
                 servicio.getNombre()
         );
@@ -340,9 +338,43 @@ public class ServicioView extends JDialog {
                 servicio.getDescripcion()
         );
 
-        chkActivo.setSelected(
-                servicio.isEstado()
+        txtPrecioBase.setText(
+                String.valueOf(
+                        servicio.getPrecioBase()
+                )
         );
+
+        txtTiempoEstimado.setText(
+                String.valueOf(
+                        servicio.getTiempoEstimadoHoras()
+                )
+        );
+
+        // 🔥 CORREGIDO: Comparación con String estado
+        chkActivo.setSelected(
+                "ACTIVO".equals(servicio.getEstado())
+        );
+
+        // 🔥 SELECCIONAR CATEGORÍA
+        for (
+                int i = 0;
+                i < comboCategorias.getItemCount();
+                i++
+        ) {
+
+            Categoria categoria =
+                    comboCategorias.getItemAt(i);
+
+            if (
+                    categoria.getId()
+                            == servicio.getIdCategoria()
+            ) {
+
+                comboCategorias.setSelectedIndex(i);
+
+                break;
+            }
+        }
     }
 
     // =========================
@@ -352,6 +384,19 @@ public class ServicioView extends JDialog {
     private void guardarServicio() {
 
         try {
+
+            Categoria categoriaSeleccionada =
+                    (Categoria) comboCategorias.getSelectedItem();
+
+            if (categoriaSeleccionada == null) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Seleccione una categoría."
+                );
+
+                return;
+            }
 
             Servicio servicio;
 
@@ -374,8 +419,25 @@ public class ServicioView extends JDialog {
                     txtDescripcion.getText().trim()
             );
 
+            servicio.setIdCategoria(
+                    categoriaSeleccionada.getId()
+            );
+
+            servicio.setPrecioBase(
+                    Double.parseDouble(
+                            txtPrecioBase.getText().trim()
+                    )
+            );
+
+            servicio.setTiempoEstimadoHoras(
+                    Double.parseDouble(
+                            txtTiempoEstimado.getText().trim()
+                    )
+            );
+
+            // 🔥 CORREGIDO: Se le asigna el valor al modelo basándose en la UI
             servicio.setEstado(
-                    chkActivo.isSelected()
+                    chkActivo.isSelected() ? "ACTIVO" : "INACTIVO"
             );
 
             String resultado =
@@ -399,6 +461,13 @@ public class ServicioView extends JDialog {
                         resultado
                 );
             }
+
+        } catch (NumberFormatException e) {
+
+            JOptionPane.showMessageDialog(
+                    this,
+                    "Precio o tiempo inválido."
+            );
 
         } catch (Exception e) {
 

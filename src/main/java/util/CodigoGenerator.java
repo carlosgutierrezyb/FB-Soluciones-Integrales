@@ -52,6 +52,19 @@ public class CodigoGenerator {
             String ultimoCodigo
     ) {
 
+        // =========================
+        // VALIDAR PREFIJO
+        // =========================
+        if (
+                prefijoCategoria == null
+                        || prefijoCategoria.trim().isEmpty()
+        ) {
+
+            throw new BusinessException(
+                    "Prefijo de categoría inválido."
+            );
+        }
+
         int nuevoCorrelativo = 1;
 
         // =========================
@@ -59,13 +72,26 @@ public class CodigoGenerator {
         // =========================
         if (
                 ultimoCodigo != null
-                        && !ultimoCodigo.isEmpty()
+                        && !ultimoCodigo.trim().isEmpty()
         ) {
 
             try {
 
                 String[] partes =
                         ultimoCodigo.split("-");
+
+                // =========================
+                // FORMATO ESPERADO:
+                // PROD-DVR-0001
+                // SERV-DVR-0001
+                // =========================
+
+                if (partes.length != 3) {
+
+                    throw new BusinessException(
+                            "Formato de código inválido."
+                    );
+                }
 
                 int ultimoNumero =
                         Integer.parseInt(
@@ -74,6 +100,12 @@ public class CodigoGenerator {
 
                 nuevoCorrelativo =
                         ultimoNumero + 1;
+
+            } catch (NumberFormatException e) {
+
+                throw new BusinessException(
+                        "Error leyendo correlativo del código."
+                );
 
             } catch (Exception e) {
 
@@ -92,9 +124,11 @@ public class CodigoGenerator {
                         nuevoCorrelativo
                 );
 
-        return tipo
+        return tipo.toUpperCase()
                 + "-"
-                + prefijoCategoria.toUpperCase()
+                + prefijoCategoria
+                .trim()
+                .toUpperCase()
                 + "-"
                 + correlativo;
     }

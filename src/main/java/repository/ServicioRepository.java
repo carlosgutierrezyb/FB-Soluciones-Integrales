@@ -29,10 +29,11 @@ public class ServicioRepository {
                 new ArrayList<>();
 
         String sql =
-                "SELECT * " +
-                        "FROM servicios " +
-                        "WHERE estado = 1 " +
-                        "ORDER BY nombre";
+                "SELECT s.*, c.nombre AS nombre_categoria " +
+                        "FROM servicios s " +
+                        "LEFT JOIN categorias c ON s.id_categoria = c.id_cat " +
+                        "WHERE s.estado = 'ACTIVO' " +
+                        "ORDER BY s.nombre";
 
         try (
 
@@ -71,9 +72,10 @@ public class ServicioRepository {
                 new ArrayList<>();
 
         String sql =
-                "SELECT * " +
-                        "FROM servicios " +
-                        "ORDER BY nombre";
+                "SELECT s.*, c.nombre AS nombre_categoria " +
+                        "FROM servicios s " +
+                        "LEFT JOIN categorias c ON s.id_categoria = c.id_cat " +
+                        "ORDER BY s.nombre";
 
         try (
 
@@ -107,13 +109,14 @@ public class ServicioRepository {
     // 🔹 BUSCAR POR ID
     // =========================
     public Servicio buscarPorId(
-            int idServicio
+            int id
     ) {
 
         String sql =
-                "SELECT * " +
-                        "FROM servicios " +
-                        "WHERE id_servicio = ?";
+                "SELECT s.*, c.nombre AS nombre_categoria " +
+                        "FROM servicios s " +
+                        "LEFT JOIN categorias c ON s.id_categoria = c.id_cat " +
+                        "WHERE s.id = ?";
 
         try (
 
@@ -125,7 +128,7 @@ public class ServicioRepository {
 
         ) {
 
-            ps.setInt(1, idServicio);
+            ps.setInt(1, id);
 
             try (
 
@@ -157,10 +160,10 @@ public class ServicioRepository {
 
         String sql =
                 "INSERT INTO servicios(" +
-                        "codigo," +
+                        "codigo_referencia," +
                         "nombre," +
+                        "id_categoria," +
                         "descripcion," +
-                        "categoria," +
                         "precio_base," +
                         "tiempo_estimado_horas," +
                         "estado" +
@@ -179,7 +182,7 @@ public class ServicioRepository {
 
             ps.setString(
                     1,
-                    servicio.getCodigo()
+                    servicio.getCodigoReferencia()
             );
 
             ps.setString(
@@ -187,14 +190,14 @@ public class ServicioRepository {
                     servicio.getNombre()
             );
 
-            ps.setString(
+            ps.setInt(
                     3,
-                    servicio.getDescripcion()
+                    servicio.getIdCategoria()
             );
 
             ps.setString(
                     4,
-                    servicio.getCategoria()
+                    servicio.getDescripcion()
             );
 
             ps.setDouble(
@@ -207,9 +210,9 @@ public class ServicioRepository {
                     servicio.getTiempoEstimadoHoras()
             );
 
-            ps.setBoolean(
+            ps.setString(
                     7,
-                    servicio.isEstado()
+                    servicio.getEstado()
             );
 
             return ps.executeUpdate() > 0;
@@ -231,14 +234,14 @@ public class ServicioRepository {
 
         String sql =
                 "UPDATE servicios SET " +
-                        "codigo = ?, " +
+                        "codigo_referencia = ?, " +
                         "nombre = ?, " +
+                        "id_categoria = ?, " +
                         "descripcion = ?, " +
-                        "categoria = ?, " +
                         "precio_base = ?, " +
                         "tiempo_estimado_horas = ?, " +
                         "estado = ? " +
-                        "WHERE id_servicio = ?";
+                        "WHERE id = ?";
 
         try (
 
@@ -252,7 +255,7 @@ public class ServicioRepository {
 
             ps.setString(
                     1,
-                    servicio.getCodigo()
+                    servicio.getCodigoReferencia()
             );
 
             ps.setString(
@@ -260,14 +263,14 @@ public class ServicioRepository {
                     servicio.getNombre()
             );
 
-            ps.setString(
+            ps.setInt(
                     3,
-                    servicio.getDescripcion()
+                    servicio.getIdCategoria()
             );
 
             ps.setString(
                     4,
-                    servicio.getCategoria()
+                    servicio.getDescripcion()
             );
 
             ps.setDouble(
@@ -280,14 +283,14 @@ public class ServicioRepository {
                     servicio.getTiempoEstimadoHoras()
             );
 
-            ps.setBoolean(
+            ps.setString(
                     7,
-                    servicio.isEstado()
+                    servicio.getEstado()
             );
 
             ps.setInt(
                     8,
-                    servicio.getIdServicio()
+                    servicio.getId()
             );
 
             return ps.executeUpdate() > 0;
@@ -304,13 +307,13 @@ public class ServicioRepository {
     // 🔹 INACTIVAR
     // =========================
     public boolean inactivar(
-            int idServicio
+            int id
     ) {
 
         String sql =
                 "UPDATE servicios " +
-                        "SET estado = 0 " +
-                        "WHERE id_servicio = ?";
+                        "SET estado = 'INACTIVO' " +
+                        "WHERE id = ?";
 
         try (
 
@@ -324,7 +327,44 @@ public class ServicioRepository {
 
             ps.setInt(
                     1,
-                    idServicio
+                    id
+            );
+
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    // =========================
+    // 🔹 REACTIVAR
+    // =========================
+    public boolean reactivar(
+            int id
+    ) {
+
+        String sql =
+                "UPDATE servicios " +
+                        "SET estado = 'ACTIVO' " +
+                        "WHERE id = ?";
+
+        try (
+
+                Connection conn =
+                        DatabaseConnection.getConnection();
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+
+        ) {
+
+            ps.setInt(
+                    1,
+                    id
             );
 
             return ps.executeUpdate() > 0;
@@ -345,7 +385,7 @@ public class ServicioRepository {
     ) {
 
         String sql =
-                "SELECT id_servicio " +
+                "SELECT id " +
                         "FROM servicios " +
                         "WHERE LOWER(nombre) = LOWER(?)";
 
@@ -390,9 +430,9 @@ public class ServicioRepository {
     ) {
 
         String sql =
-                "SELECT id_servicio " +
+                "SELECT id " +
                         "FROM servicios " +
-                        "WHERE LOWER(codigo) = LOWER(?)";
+                        "WHERE LOWER(codigo_referencia) = LOWER(?)";
 
         try (
 
@@ -428,6 +468,58 @@ public class ServicioRepository {
     }
 
     // =========================
+    // 🔥 OBTENER ÚLTIMO CÓDIGO
+    // =========================
+    public String obtenerUltimoCodigoPorCategoria(
+            int idCategoria
+    ) {
+
+        String sql =
+                "SELECT s.codigo_referencia " +
+                        "FROM servicios s " +
+                        "INNER JOIN categorias c " +
+                        "ON s.id_categoria = c.id_cat " +
+                        "WHERE s.id_categoria = ? " +
+                        "AND s.codigo_referencia LIKE CONCAT('SERV-', c.prefijo, '-%') " +
+                        "ORDER BY s.id DESC " +
+                        "LIMIT 1";
+
+        try (
+
+                Connection conn =
+                        DatabaseConnection.getConnection();
+
+                PreparedStatement ps =
+                        conn.prepareStatement(sql)
+
+        ) {
+
+            ps.setInt(1, idCategoria);
+
+            try (
+
+                    ResultSet rs =
+                            ps.executeQuery()
+
+            ) {
+
+                if (rs.next()) {
+
+                    return rs.getString(
+                            "codigo_referencia"
+                    );
+                }
+            }
+
+        } catch (Exception e) {
+
+            e.printStackTrace();
+        }
+
+        return null;
+    }
+
+    // =========================
     // 🔹 MAPEAR
     // =========================
     private Servicio mapearServicio(
@@ -437,24 +529,28 @@ public class ServicioRepository {
         Servicio s =
                 new Servicio();
 
-        s.setIdServicio(
-                rs.getInt("id_servicio")
+        s.setId(
+                rs.getInt("id")
         );
 
-        s.setCodigo(
-                rs.getString("codigo")
+        s.setCodigoReferencia(
+                rs.getString("codigo_referencia")
         );
 
         s.setNombre(
                 rs.getString("nombre")
         );
 
-        s.setDescripcion(
-                rs.getString("descripcion")
+        s.setIdCategoria(
+                rs.getInt("id_categoria")
         );
 
-        s.setCategoria(
-                rs.getString("categoria")
+        s.setNombreCategoria(
+                rs.getString("nombre_categoria")
+        );
+
+        s.setDescripcion(
+                rs.getString("descripcion")
         );
 
         s.setPrecioBase(
@@ -466,7 +562,7 @@ public class ServicioRepository {
         );
 
         s.setEstado(
-                rs.getBoolean("estado")
+                rs.getString("estado")
         );
 
         return s;

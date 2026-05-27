@@ -2,7 +2,7 @@ package controller;
 
 import model.Servicio;
 import service.ServicioService;
-
+import model.Categoria;
 import java.util.List;
 
 /**
@@ -45,6 +45,11 @@ public class ServicioController {
         return service.listarTodos();
     }
 
+    public List<Categoria> obtenerCategorias() {
+
+        return service.obtenerCategorias();
+    }
+
     // =========================
     // 🔹 BUSCAR POR ID
     // =========================
@@ -83,15 +88,14 @@ public class ServicioController {
 
     // =========================
     // 🔹 GUARDAR POR CAMPOS
-    // 🔥 Compatibilidad
+    // 🔥 NUEVA LÓGICA ERP
     // =========================
 
     public String guardarServicio(
 
-            String codigo,
             String nombre,
             String descripcion,
-            String categoria,
+            int idCategoria,
             double precioBase,
             double tiempoEstimadoHoras,
             boolean estado
@@ -103,9 +107,8 @@ public class ServicioController {
             Servicio servicio =
                     new Servicio();
 
-            servicio.setCodigo(
-                    codigo
-            );
+            // 🔥 EL SKU YA NO SE ENVÍA
+            // EL SERVICE LO GENERA AUTOMÁTICAMENTE
 
             servicio.setNombre(
                     nombre
@@ -115,8 +118,8 @@ public class ServicioController {
                     descripcion
             );
 
-            servicio.setCategoria(
-                    categoria
+            servicio.setIdCategoria(
+                    idCategoria
             );
 
             servicio.setPrecioBase(
@@ -129,6 +132,8 @@ public class ServicioController {
 
             servicio.setEstado(
                     estado
+                            ? "ACTIVO"
+                            : "INACTIVO"
             );
 
             return service.guardarServicio(

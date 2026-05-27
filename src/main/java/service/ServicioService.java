@@ -1,8 +1,11 @@
 package service;
 
 import exception.BusinessException;
+import model.Categoria;
 import model.Servicio;
+import repository.CategoriaRepository;
 import repository.ServicioRepository;
+import util.CodigoGenerator;
 
 import java.util.List;
 
@@ -18,6 +21,8 @@ public class ServicioService {
 
     private final ServicioRepository repository;
 
+    private final CategoriaRepository categoriaRepo;
+
     // =========================
     // CONSTRUCTOR
     // =========================
@@ -26,6 +31,9 @@ public class ServicioService {
 
         this.repository =
                 new ServicioRepository();
+
+        this.categoriaRepo =
+                new CategoriaRepository();
     }
 
     // =========================
@@ -44,6 +52,15 @@ public class ServicioService {
     public List<Servicio> listarTodos() {
 
         return repository.listarTodos();
+    }
+
+    // =========================
+    // 🔹 OBTENER CATEGORÍAS
+    // =========================
+
+    public List<Categoria> obtenerCategorias() {
+
+        return categoriaRepo.listarCategorias();
     }
 
     // =========================
@@ -78,23 +95,52 @@ public class ServicioService {
 
             validarServicio(servicio);
 
+            // =========================
+            // 🔥 BUSCAR CATEGORÍA
+            // =========================
+
+            Categoria categoria =
+                    categoriaRepo.buscarPorId(
+                            servicio.getIdCategoria()
+                    );
+
+            if (categoria == null) {
+
+                return "La categoría no existe.";
+            }
+
+            // =========================
+            // 🔥 OBTENER ÚLTIMO SKU
+            // =========================
+
+            String ultimoCodigo =
+                    repository.obtenerUltimoCodigoPorCategoria(
+                            servicio.getIdCategoria()
+                    );
+
+            // =========================
+            // 🔥 GENERAR SKU
+            // EJ:
+            // SERV-DVR-0001
+            // =========================
+
+            String codigoGenerado =
+                    CodigoGenerator.generarCodigoServicio(
+                            categoria.getPrefijo(),
+                            ultimoCodigo
+                    );
+
+            servicio.setCodigoReferencia(
+                    codigoGenerado
+            );
+
             boolean guardado;
 
             // =========================
             // 🔥 NUEVO
             // =========================
 
-            if (servicio.getIdServicio() == 0) {
-
-                // 🔥 VALIDAR CÓDIGO
-                if (
-                        repository.existeCodigo(
-                                servicio.getCodigo()
-                        )
-                ) {
-
-                    return "Ya existe un servicio con ese código.";
-                }
+            if (servicio.getId() == 0) {
 
                 // 🔥 VALIDAR NOMBRE
                 if (
@@ -196,33 +242,6 @@ public class ServicioService {
         }
 
         // =========================
-        // CÓDIGO
-        // =========================
-
-        if (
-                servicio.getCodigo() == null
-                        || servicio.getCodigo()
-                        .trim()
-                        .isEmpty()
-        ) {
-
-            throw new BusinessException(
-                    "El código del servicio es obligatorio."
-            );
-        }
-
-        if (
-                servicio.getCodigo()
-                        .trim()
-                        .length() < 2
-        ) {
-
-            throw new BusinessException(
-                    "El código del servicio es demasiado corto."
-            );
-        }
-
-        // =========================
         // NOMBRE
         // =========================
 
@@ -256,7 +275,7 @@ public class ServicioService {
         if (
                 servicio.getDescripcion() != null
                         && servicio.getDescripcion()
-                        .length() > 200
+                        .length() > 255
         ) {
 
             throw new BusinessException(
@@ -269,13 +288,11 @@ public class ServicioService {
         // =========================
 
         if (
-                servicio.getCategoria() != null
-                        && servicio.getCategoria()
-                        .length() > 100
+                servicio.getIdCategoria() <= 0
         ) {
 
             throw new BusinessException(
-                    "La categoría es demasiado larga."
+                    "Debe seleccionar una categoría."
             );
         }
 

@@ -14,21 +14,26 @@ public class Servicio {
     // ATRIBUTOS
     // =========================
 
-    private int idServicio;
+    private int id;
 
-    private String codigo;
+    private String codigoReferencia;
 
     private String nombre;
 
     private String descripcion;
 
-    private String categoria;
+    // 🔥 NUEVO
+    private int idCategoria;
+
+    private String nombreCategoria;
 
     private double precioBase;
 
     private double tiempoEstimadoHoras;
 
-    private boolean estado;
+    // 🔥 AHORA:
+    // ACTIVO / INACTIVO
+    private String estado;
 
     // =========================
     // CONSTRUCTORES
@@ -36,39 +41,45 @@ public class Servicio {
 
     public Servicio() {
 
-        this.estado = true;
+        this.estado = "ACTIVO";
     }
 
     public Servicio(
-            int idServicio,
+            int id,
             String nombre
     ) {
 
-        setIdServicio(idServicio);
+        setId(id);
 
         setNombre(nombre);
 
-        this.estado = true;
+        this.estado = "ACTIVO";
     }
 
     // =========================
     // GETTERS
     // =========================
 
-    public int getIdServicio() {
-
-        return idServicio;
-    }
-
-    // 🔥 Compatibilidad UI
     public int getId() {
 
-        return idServicio;
+        return id;
     }
 
+    // 🔥 Compatibilidad antigua
+    public int getIdServicio() {
+
+        return id;
+    }
+
+    public String getCodigoReferencia() {
+
+        return codigoReferencia;
+    }
+
+    // 🔥 Compatibilidad antigua
     public String getCodigo() {
 
-        return codigo;
+        return codigoReferencia;
     }
 
     public String getNombre() {
@@ -81,9 +92,14 @@ public class Servicio {
         return descripcion;
     }
 
-    public String getCategoria() {
+    public int getIdCategoria() {
 
-        return categoria;
+        return idCategoria;
+    }
+
+    public String getNombreCategoria() {
+
+        return nombreCategoria;
     }
 
     public double getPrecioBase() {
@@ -96,7 +112,7 @@ public class Servicio {
         return tiempoEstimadoHoras;
     }
 
-    public boolean isEstado() {
+    public String getEstado() {
 
         return estado;
     }
@@ -105,27 +121,35 @@ public class Servicio {
     // SETTERS
     // =========================
 
-    public void setIdServicio(
-            int idServicio
+    public void setId(
+            int id
     ) {
 
-        if (idServicio < 0) {
+        if (id < 0) {
 
             throw new BusinessException(
                     "ID servicio inválido."
             );
         }
 
-        this.idServicio = idServicio;
+        this.id = id;
     }
 
-    public void setCodigo(
-            String codigo
+    // 🔥 Compatibilidad antigua
+    public void setIdServicio(
+            int idServicio
+    ) {
+
+        setId(idServicio);
+    }
+
+    public void setCodigoReferencia(
+            String codigoReferencia
     ) {
 
         if (
-                codigo == null
-                        || codigo.trim().isEmpty()
+                codigoReferencia == null
+                        || codigoReferencia.trim().isEmpty()
         ) {
 
             throw new BusinessException(
@@ -133,7 +157,16 @@ public class Servicio {
             );
         }
 
-        this.codigo = codigo.trim();
+        this.codigoReferencia =
+                codigoReferencia.trim();
+    }
+
+    // 🔥 Compatibilidad antigua
+    public void setCodigo(
+            String codigo
+    ) {
+
+        setCodigoReferencia(codigo);
     }
 
     public void setNombre(
@@ -163,14 +196,25 @@ public class Servicio {
                         : null;
     }
 
-    public void setCategoria(
-            String categoria
+    public void setIdCategoria(
+            int idCategoria
     ) {
 
-        this.categoria =
-                categoria != null
-                        ? categoria.trim()
-                        : null;
+        if (idCategoria <= 0) {
+
+            throw new BusinessException(
+                    "Categoría inválida."
+            );
+        }
+
+        this.idCategoria = idCategoria;
+    }
+
+    public void setNombreCategoria(
+            String nombreCategoria
+    ) {
+
+        this.nombreCategoria = nombreCategoria;
     }
 
     public void setPrecioBase(
@@ -203,8 +247,16 @@ public class Servicio {
     }
 
     public void setEstado(
-            boolean estado
+            String estado
     ) {
+
+        if (
+                estado == null
+                        || estado.trim().isEmpty()
+        ) {
+
+            estado = "ACTIVO";
+        }
 
         this.estado = estado;
     }
