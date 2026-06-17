@@ -12,9 +12,9 @@ import java.util.List;
  *
  * 🔥 ERP F&B:
  * - Comunicación View ↔ Service
- * - Crear órdenes
- * - Consultas
- * - Filtros
+ * - Crear órdenes (Cabecera + Detalles)
+ * - Consultas maestras y filtrados por estado
+ * - Desacoplado de la gestión operativa multi-técnico
  */
 public class OrdenServicioController {
 
@@ -86,6 +86,15 @@ public class OrdenServicioController {
                 orden,
                 detalles
         );
+    }
+
+    // =========================
+    // 🔹 ACTUALIZAR ESTADO DIRECTO
+    // =========================
+
+    public String actualizarEstado(int idOrdenServicio, String nuevoEstado) {
+
+        return service.actualizarEstado(idOrdenServicio, nuevoEstado);
     }
 
     // =========================

@@ -9,14 +9,18 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * Vista de gestión de órdenes de servicio.
+ * Gestión Operativa de Órdenes de Servicio.
  *
- * 🔥 ERP:
- * - Consultar órdenes
- * - Filtrar por estado
- * - Gestionar ejecución
+ * 🔥 ERP F&B:
+ * - Consultar órdenes de forma maestra.
+ * - Filtrar por los estados reales del nuevo flujo del ERP.
+ * - Acceso directo a la gestión multi-técnico y operativa.
  */
 public class OrdenServicioListView extends JFrame {
+
+    // =========================
+    // COMPONENTES
+    // =========================
 
     private JTable tabla;
 
@@ -26,236 +30,170 @@ public class OrdenServicioListView extends JFrame {
 
     private JButton btnVerDetalle;
 
-    private JButton btnEjecutar;
+    private JButton btnGestionar;
 
     private JComboBox<String> comboEstado;
 
     private OrdenServicioController controller;
 
-    public void setController(
-            OrdenServicioController controller
-    ) {
+    // =========================
+    // CONTROLLER
+    // =========================
 
+    public void setController(OrdenServicioController controller) {
         this.controller = controller;
     }
 
+    // =========================
+    // CONSTRUCTOR
+    // =========================
+
     public OrdenServicioListView() {
 
-        setTitle(
-                "Gestión de Órdenes de Servicio"
-        );
+        setTitle("Gestión de Órdenes de Servicio");
 
-        setSize(1100, 600);
+        setSize(1250, 650);
 
         setLocationRelativeTo(null);
 
-        setLayout(
-                new BorderLayout(10, 10)
-        );
+        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+
+        setLayout(new BorderLayout(10, 10));
+
+        // Inicializamos el controlador por defecto por seguridad arquitectónica
+        this.controller = new OrdenServicioController();
 
         inicializarComponentes();
     }
 
     // =========================
-    // 🔹 COMPONENTES
+    // COMPONENTES
     // =========================
+
     private void inicializarComponentes() {
 
         // =========================
-        // 🔹 PANEL SUPERIOR
+        // PANEL SUPERIOR
         // =========================
-        JPanel panelTop =
-                new JPanel(
-                        new FlowLayout(
-                                FlowLayout.LEFT
-                        )
-                );
 
-        panelTop.add(
-                new JLabel("Estado:")
-        );
+        JPanel panelTop = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-        comboEstado =
-                new JComboBox<>();
+        panelTop.add(new JLabel("Estado:"));
 
+        comboEstado = new JComboBox<>();
+
+        // 🔥 CORRECCIÓN 4: Estados alineados con el flujo operativo real sin depender de facturación
         comboEstado.addItem("TODAS");
         comboEstado.addItem("Pendiente");
-        comboEstado.addItem("Agendada");
+        comboEstado.addItem("Asignada");
         comboEstado.addItem("En ejecución");
-        comboEstado.addItem("Ejecutada");
+        comboEstado.addItem("Finalizada");
         comboEstado.addItem("Cancelada");
 
-        btnCargar =
-                new JButton(
-                        "Cargar Órdenes"
-                );
+        btnCargar = new JButton("Cargar Órdenes");
 
         panelTop.add(comboEstado);
-
         panelTop.add(btnCargar);
 
-        add(
-                panelTop,
-                BorderLayout.NORTH
-        );
+        add(panelTop, BorderLayout.NORTH);
 
         // =========================
-        // 🔹 TABLA
+        // TABLA
         // =========================
-        modelo =
-                new DefaultTableModel(
-                        new Object[]{
-                                "ID",
-                                "Cliente",
-                                "Estado",
-                                "Prioridad",
-                                "Fecha Programada",
-                                "Dirección"
-                        },
-                        0
-                ) {
 
-                    @Override
-                    public boolean isCellEditable(
-                            int row,
-                            int column
-                    ) {
+        // 🔥 CORRECCIÓN: Columnas simplificadas para desacoplar técnicos y facturación directa
+        modelo = new DefaultTableModel(
+                new Object[]{
+                        "ID",
+                        "Cliente",
+                        "Estado",
+                        "Prioridad",
+                        "Fecha Programada",
+                        "Dirección"
+                },
+                0
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
-                        return false;
-                    }
-                };
+        tabla = new JTable(modelo);
 
-        tabla =
-                new JTable(modelo);
+        tabla.setRowHeight(26);
 
-        tabla.setRowHeight(24);
+        JScrollPane scroll = new JScrollPane(tabla);
 
-        add(
-                new JScrollPane(tabla),
-                BorderLayout.CENTER
-        );
+        add(scroll, BorderLayout.CENTER);
 
         // =========================
-        // 🔹 PANEL INFERIOR
+        // PANEL INFERIOR
         // =========================
-        JPanel panelBottom =
-                new JPanel();
 
-        btnVerDetalle =
-                new JButton(
-                        "Ver Detalle"
-                );
+        JPanel panelBottom = new JPanel();
 
-        btnEjecutar =
-                new JButton(
-                        "Gestionar Orden"
-                );
+        btnVerDetalle = new JButton("Ver Detalle");
 
-        // 🔵 BOTÓN DETALLE
-        btnVerDetalle.setBackground(
-                new Color(0, 102, 204)
-        );
+        btnGestionar = new JButton("Gestionar Orden");
 
-        btnVerDetalle.setForeground(
-                Color.WHITE
-        );
-
+        // 🔵 DETALLE
+        btnVerDetalle.setBackground(new Color(0, 102, 204));
+        btnVerDetalle.setForeground(Color.WHITE);
         btnVerDetalle.setFocusPainted(false);
-
-        btnVerDetalle.setContentAreaFilled(true);
-
         btnVerDetalle.setOpaque(true);
-
         btnVerDetalle.setBorderPainted(false);
 
-        // 🟢 BOTÓN EJECUCIÓN
-        btnEjecutar.setBackground(
-                new Color(0, 153, 0)
-        );
-
-        btnEjecutar.setForeground(
-                Color.WHITE
-        );
-
-        btnEjecutar.setFocusPainted(false);
-
-        btnEjecutar.setContentAreaFilled(true);
-
-        btnEjecutar.setOpaque(true);
-
-        btnEjecutar.setBorderPainted(false);
+        // 🟢 GESTIÓN
+        btnGestionar.setBackground(new Color(0, 153, 0));
+        btnGestionar.setForeground(Color.WHITE);
+        btnGestionar.setFocusPainted(false);
+        btnGestionar.setOpaque(true);
+        btnGestionar.setBorderPainted(false);
 
         panelBottom.add(btnVerDetalle);
+        panelBottom.add(btnGestionar);
 
-        panelBottom.add(btnEjecutar);
-
-        add(
-                panelBottom,
-                BorderLayout.SOUTH
-        );
+        add(panelBottom, BorderLayout.SOUTH);
 
         // =========================
-        // 🔥 EVENTOS
+        // EVENTOS
         // =========================
-        btnCargar.addActionListener(
-                e -> cargarOrdenes()
-        );
 
-        btnVerDetalle.addActionListener(
-                e -> verDetalle()
-        );
+        btnCargar.addActionListener(e -> cargarOrdenes());
 
-        btnEjecutar.addActionListener(
-                e -> gestionarOrden()
-        );
+        btnVerDetalle.addActionListener(e -> verDetalle());
+
+        btnGestionar.addActionListener(e -> gestionarOrden());
     }
 
     // =========================
-    // 🔹 CARGAR ÓRDENES
+    // CARGAR ÓRDENES
     // =========================
+
     private void cargarOrdenes() {
 
         modelo.setRowCount(0);
 
-        String estado =
-                comboEstado
-                        .getSelectedItem()
-                        .toString();
+        String estado = comboEstado.getSelectedItem().toString();
 
         List<OrdenServicio> lista;
 
-        if (
-                "TODAS".equalsIgnoreCase(
-                        estado
-                )
-        ) {
-
-            lista =
-                    controller.listarTodas();
-
+        if ("TODAS".equalsIgnoreCase(estado)) {
+            lista = controller.listarTodas();
         } else {
-
-            lista =
-                    controller.listarPorEstado(
-                            estado
-                    );
+            lista = controller.listarPorEstado(estado);
         }
 
         for (OrdenServicio os : lista) {
-
+            // 🔥 CORRECCIÓN: Uso de getters corregidos libres de errores de compilación
             modelo.addRow(
                     new Object[]{
-
-                            os.getId(),
-
+                            os.getIdOrdenServicio(),
                             os.getNombreCliente(),
-
                             os.getEstado(),
-
                             os.getPrioridad(),
-
                             os.getFechaProgramada(),
-
                             os.getDireccionServicio()
                     }
             );
@@ -263,82 +201,46 @@ public class OrdenServicioListView extends JFrame {
     }
 
     // =========================
-    // 🔹 OBTENER ORDEN
+    // OBTENER ORDEN
     // =========================
+
     private OrdenServicio obtenerOrdenSeleccionada() {
 
-        int fila =
-                tabla.getSelectedRow();
+        int fila = tabla.getSelectedRow();
 
         if (fila == -1) {
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Seleccione una orden."
-            );
-
+            JOptionPane.showMessageDialog(this, "Seleccione una orden.");
             return null;
         }
 
-        int idOrden =
-                (int) modelo.getValueAt(
-                        fila,
-                        0
-                );
+        // 🔥 CORRECCIÓN: Extracción limpia basada en el ID real mapeado en la columna 0
+        int idOrden = (int) modelo.getValueAt(fila, 0);
 
-        return controller.buscarPorId(
-                idOrden
-        );
+        return controller.buscarPorId(idOrden);
     }
 
     // =========================
-    // 🔹 VER DETALLE
+    // VER DETALLE
     // =========================
+
     private void verDetalle() {
 
-        OrdenServicio orden =
-                obtenerOrdenSeleccionada();
+        OrdenServicio orden = obtenerOrdenSeleccionada();
 
         if (orden == null) {
-
             return;
         }
 
         String mensaje =
-                "Orden: "
-                        + orden.getId()
-                        + "\n\n"
-
-                        + "Cliente: "
-                        + orden.getNombreCliente()
-                        + "\n"
-
-                        + "Estado: "
-                        + orden.getEstado()
-                        + "\n"
-
-                        + "Prioridad: "
-                        + orden.getPrioridad()
-                        + "\n"
-
-                        + "Fecha Programada: "
-                        + orden.getFechaProgramada()
-                        + "\n"
-
-                        + "Dirección: "
-                        + orden.getDireccionServicio()
-                        + "\n\n"
-
-                        + "Contacto: "
-                        + orden.getContactoNombre()
-                        + "\n"
-
-                        + "Teléfono: "
-                        + orden.getContactoTelefono()
-                        + "\n\n"
-
-                        + "Observaciones:\n"
-                        + orden.getObservaciones();
+                "ORDEN #" + orden.getIdOrdenServicio()
+                        + "\n\nCliente: " + orden.getNombreCliente()
+                        + "\nEstado: " + orden.getEstado()
+                        + "\nPrioridad: " + orden.getPrioridad()
+                        + "\nFecha Programada: " + orden.getFechaProgramada()
+                        + "\n\nDirección:\n" + orden.getDireccionServicio()
+                        + "\n\nContacto:\n" + orden.getContactoNombre()
+                        + "\n" + orden.getContactoTelefono()
+                        + "\n\nObservaciones:\n" + orden.getObservaciones();
 
         JOptionPane.showMessageDialog(
                 this,
@@ -349,25 +251,19 @@ public class OrdenServicioListView extends JFrame {
     }
 
     // =========================
-    // 🔹 GESTIONAR ORDEN
+    // GESTIONAR ORDEN
     // =========================
+
     private void gestionarOrden() {
 
-        OrdenServicio orden =
-                obtenerOrdenSeleccionada();
+        OrdenServicio orden = obtenerOrdenSeleccionada();
 
         if (orden == null) {
-
             return;
         }
 
-        JOptionPane.showMessageDialog(
-                this,
-                "Aquí posteriormente abrirás "
-                        + "la vista operativa de ejecución "
-                        + "de servicios.\n\n"
-                        + "Orden seleccionada: "
-                        + orden.getId()
-        );
+        // 🔥 CORRECCIÓN: Instanciación limpia abriendo la ventana de gestión unificada real
+        OrdenServicioGestionView view = new OrdenServicioGestionView(orden);
+        view.setVisible(true);
     }
 }

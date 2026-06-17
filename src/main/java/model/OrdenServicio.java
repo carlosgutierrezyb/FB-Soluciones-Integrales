@@ -21,7 +21,6 @@ public class OrdenServicio {
 
     private int idCliente;
 
-    // 🔥 NUEVO
     private String nombreCliente;
 
     /*
@@ -51,6 +50,15 @@ public class OrdenServicio {
 
     private Integer creadoPor;
 
+    // 🔥 NUEVOS ATRIBUTOS PARA OPERACIONES Y FLUJO OPERATIVO
+    private Integer idTecnico;
+
+    private Timestamp fechaInicio;
+
+    private Timestamp fechaFin;
+
+    private String estadoFacturacion;
+
     // =========================
     // GETTERS
     // =========================
@@ -59,7 +67,6 @@ public class OrdenServicio {
         return idOrdenServicio;
     }
 
-    // Compatibilidad UI
     public int getId() {
         return idOrdenServicio;
     }
@@ -104,8 +111,30 @@ public class OrdenServicio {
         return observaciones;
     }
 
+    // Método de alias por si el repositorio requiere buscarlo en inglés
+    public String getObservations() {
+        return observaciones;
+    }
+
     public Integer getCreadoPor() {
         return creadoPor;
+    }
+
+    // 🔥 GETTERS NUEVOS
+    public Integer getIdTecnico() {
+        return idTecnico;
+    }
+
+    public Timestamp getFechaInicio() {
+        return fechaInicio;
+    }
+
+    public Timestamp getFechaFin() {
+        return fechaFin;
+    }
+
+    public String getEstadoFacturacion() {
+        return estadoFacturacion;
     }
 
     // =========================
@@ -113,167 +142,105 @@ public class OrdenServicio {
     // =========================
 
     public void setIdOrdenServicio(int idOrdenServicio) {
-
-        this.idOrdenServicio =
-                idOrdenServicio;
+        this.idOrdenServicio = idOrdenServicio;
     }
 
     public void setIdCliente(int idCliente) {
-
         if (idCliente <= 0) {
-
-            throw new BusinessException(
-                    "El cliente es obligatorio."
-            );
+            throw new BusinessException("El cliente es obligatorio.");
         }
-
         this.idCliente = idCliente;
     }
 
-    public void setNombreCliente(
-            String nombreCliente
-    ) {
-
-        this.nombreCliente =
-                nombreCliente;
+    public void setNombreCliente(String nombreCliente) {
+        this.nombreCliente = nombreCliente;
     }
 
     public void setEstado(String estado) {
-
-        if (
-                estado == null
-                        || estado.trim().isEmpty()
-        ) {
-
-            throw new BusinessException(
-                    "El estado es obligatorio."
-            );
+        if (estado == null || estado.trim().isEmpty()) {
+            throw new BusinessException("El estado es obligatorio.");
         }
 
         estado = estado.trim();
 
         switch (estado) {
-
             case "Pendiente":
-
             case "Agendada":
-
             case "En ejecución":
-
             case "Ejecutada":
-
             case "Facturada":
-
             case "Cancelada":
-
                 this.estado = estado;
                 break;
-
             default:
-
-                throw new BusinessException(
-                        "Estado inválido: "
-                                + estado
-                );
+                throw new BusinessException("Estado inválido: " + estado);
         }
     }
 
-    public void setFechaCreacion(
-            Timestamp fechaCreacion
-    ) {
-
-        this.fechaCreacion =
-                fechaCreacion;
+    public void setFechaCreacion(Timestamp fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
     }
 
-    public void setFechaProgramada(
-            java.sql.Date fechaProgramada
-    ) {
-
+    public void setFechaProgramada(java.sql.Date fechaProgramada) {
         if (fechaProgramada == null) {
-
-            throw new BusinessException(
-                    "La fecha programada es obligatoria."
-            );
+            throw new BusinessException("La fecha programada es obligatoria.");
         }
-
-        this.fechaProgramada =
-                fechaProgramada;
+        this.fechaProgramada = fechaProgramada;
     }
 
-    public void setPrioridad(
-            String prioridad
-    ) {
-
-        if (
-                prioridad == null
-                        || prioridad.trim().isEmpty()
-        ) {
-
-            throw new BusinessException(
-                    "La prioridad es obligatoria."
-            );
+    public void setPrioridad(String prioridad) {
+        if (prioridad == null || prioridad.trim().isEmpty()) {
+            throw new BusinessException("La prioridad es obligatoria.");
         }
 
         prioridad = prioridad.trim();
 
         switch (prioridad) {
-
             case "Alta":
-
             case "Media":
-
             case "Baja":
-
                 this.prioridad = prioridad;
                 break;
-
             default:
-
-                throw new BusinessException(
-                        "Prioridad inválida."
-                );
+                throw new BusinessException("Prioridad inválida.");
         }
     }
 
-    public void setDireccionServicio(
-            String direccionServicio
-    ) {
-
-        this.direccionServicio =
-                direccionServicio;
+    public void setDireccionServicio(String direccionServicio) {
+        this.direccionServicio = direccionServicio;
     }
 
-    public void setContactoNombre(
-            String contactoNombre
-    ) {
-
-        this.contactoNombre =
-                contactoNombre;
+    public void setContactoNombre(String contactoNombre) {
+        this.contactoNombre = contactoNombre;
     }
 
-    public void setContactoTelefono(
-            String contactoTelefono
-    ) {
-
-        this.contactoTelefono =
-                contactoTelefono;
+    public void setContactoTelefono(String contactoTelefono) {
+        this.contactoTelefono = contactoTelefono;
     }
 
-    public void setObservaciones(
-            String observaciones
-    ) {
-
-        this.observaciones =
-                observaciones;
+    public void setObservaciones(String observaciones) {
+        this.observaciones = observaciones;
     }
 
-    public void setCreadoPor(
-            Integer creadoPor
-    ) {
+    public void setCreadoPor(Integer creadoPor) {
+        this.creadoPor = creadoPor;
+    }
 
-        this.creadoPor =
-                creadoPor;
+    // 🔥 SETTERS NUEVOS
+    public void setIdTecnico(Integer idTecnico) {
+        this.idTecnico = idTecnico;
+    }
+
+    public void setFechaInicio(Timestamp fechaInicio) {
+        this.fechaInicio = fechaInicio;
+    }
+
+    public void setFechaFin(Timestamp fechaFin) {
+        this.fechaFin = fechaFin;
+    }
+
+    public void setEstadoFacturacion(String estadoFacturacion) {
+        this.estadoFacturacion = estadoFacturacion;
     }
 
     // =========================
@@ -282,11 +249,7 @@ public class OrdenServicio {
 
     @Override
     public String toString() {
-
-        return "OS #"
-                + idOrdenServicio
-                + " - "
-                + estado;
+        return "OS #" + idOrdenServicio + " - " + estado;
     }
 
     // =========================
@@ -295,29 +258,18 @@ public class OrdenServicio {
 
     @Override
     public boolean equals(Object o) {
-
         if (this == o) {
-
             return true;
         }
-
         if (!(o instanceof OrdenServicio)) {
-
             return false;
         }
-
-        OrdenServicio that =
-                (OrdenServicio) o;
-
-        return idOrdenServicio ==
-                that.idOrdenServicio;
+        OrdenServicio that = (OrdenServicio) o;
+        return idOrdenServicio == that.idOrdenServicio;
     }
 
     @Override
     public int hashCode() {
-
-        return Integer.hashCode(
-                idOrdenServicio
-        );
+        return Integer.hashCode(idOrdenServicio);
     }
 }

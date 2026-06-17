@@ -11,11 +11,9 @@ import java.util.List;
  * Repository de órdenes de servicio.
  *
  * 🔥 ERP PRO:
- * - Crear órdenes
- * - Listar órdenes
- * - Filtrar por estado
- * - Filtrar por cliente
- * - Actualizar estados
+ * - Repositorio Maestro de la Cabecera de la Orden.
+ * - Libre de lógica de técnicos/operativa directa.
+ * - Flujo alineado con los estados reales del ERP.
  */
 public class OrdenServicioRepository {
 
@@ -25,24 +23,14 @@ public class OrdenServicioRepository {
     public int crear(OrdenServicio orden) {
 
         try (
-
-                Connection conn =
-                        DatabaseConnection.getConnection()
-
+                Connection conn = DatabaseConnection.getConnection()
         ) {
-
-            return crear(
-                    orden,
-                    conn
-            );
+            return crear(orden, conn);
 
         } catch (SQLException e) {
-
             System.err.println(
-                    "❌ Error creando orden servicio: "
-                            + e.getMessage()
+                    "❌ Error creando orden servicio: " + e.getMessage()
             );
-
             return -1;
         }
     }
@@ -71,108 +59,45 @@ public class OrdenServicioRepository {
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (
-
-                PreparedStatement ps =
-                        conn.prepareStatement(
-                                sql,
-                                PreparedStatement.RETURN_GENERATED_KEYS
-                        )
-
+                PreparedStatement ps = conn.prepareStatement(
+                        sql,
+                        PreparedStatement.RETURN_GENERATED_KEYS
+                )
         ) {
+            System.out.println("🛠️ Creando orden de servicio...");
 
-            System.out.println(
-                    "🛠️ Creando orden de servicio..."
-            );
+            ps.setInt(1, orden.getIdCliente());
+            ps.setDate(2, orden.getFechaProgramada());
+            ps.setString(3, orden.getPrioridad());
+            ps.setString(4, orden.getEstado());
+            ps.setString(5, orden.getDireccionServicio());
+            ps.setString(6, orden.getContactoNombre());
+            ps.setString(7, orden.getContactoTelefono());
 
-            ps.setInt(
-                    1,
-                    orden.getIdCliente()
-            );
-
-            ps.setDate(
-                    2,
-                    orden.getFechaProgramada()
-            );
-
-            ps.setString(
-                    3,
-                    orden.getPrioridad()
-            );
-
-            ps.setString(
-                    4,
-                    orden.getEstado()
-            );
-
-            ps.setString(
-                    5,
-                    orden.getDireccionServicio()
-            );
-
-            ps.setString(
-                    6,
-                    orden.getContactoNombre()
-            );
-
-            ps.setString(
-                    7,
-                    orden.getContactoTelefono()
-            );
-
-            ps.setString(
-                    8,
-                    orden.getObservaciones()
-            );
+            // 🔥 CORRECCIÓN 1: Se eliminó el operador ternario incompleto que no compilaba
+            ps.setString(8, orden.getObservaciones());
 
             if (orden.getCreadoPor() != null) {
-
-                ps.setInt(
-                        9,
-                        orden.getCreadoPor()
-                );
-
+                ps.setInt(9, orden.getCreadoPor());
             } else {
-
-                ps.setNull(
-                        9,
-                        Types.INTEGER
-                );
+                ps.setNull(9, Types.INTEGER);
             }
 
-            int filas =
-                    ps.executeUpdate();
+            int filas = ps.executeUpdate();
 
             if (filas == 0) {
-
-                throw new SQLException(
-                        "No se pudo crear la orden."
-                );
+                throw new SQLException("No se pudo crear la orden.");
             }
 
-            try (
-
-                    ResultSet rs =
-                            ps.getGeneratedKeys()
-
-            ) {
-
+            try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
-
-                    int idGenerado =
-                            rs.getInt(1);
-
-                    System.out.println(
-                            "✅ Orden servicio creada ID: "
-                                    + idGenerado
-                    );
-
+                    int idGenerado = rs.getInt(1);
+                    System.out.println("✅ Orden servicio creada ID: " + idGenerado);
                     return idGenerado;
                 }
             }
 
-            throw new SQLException(
-                    "No se obtuvo ID."
-            );
+            throw new SQLException("No se obtuvo ID.");
         }
     }
 
@@ -181,8 +106,7 @@ public class OrdenServicioRepository {
     // =========================
     public List<OrdenServicio> listarTodas() {
 
-        List<OrdenServicio> lista =
-                new ArrayList<>();
+        List<OrdenServicio> lista = new ArrayList<>();
 
         String sql =
                 "SELECT "
@@ -194,30 +118,17 @@ public class OrdenServicioRepository {
                         + "ORDER BY os.id_orden_servicio DESC";
 
         try (
-
-                Connection conn =
-                        DatabaseConnection.getConnection();
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql);
-
-                ResultSet rs =
-                        ps.executeQuery()
-
+                Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql);
+                ResultSet rs = ps.executeQuery()
         ) {
-
             while (rs.next()) {
-
-                lista.add(
-                        mapearOrden(rs)
-                );
+                lista.add(mapearOrden(rs));
             }
 
         } catch (SQLException e) {
-
             System.err.println(
-                    "❌ Error listando órdenes servicio: "
-                            + e.getMessage()
+                    "❌ Error listando órdenes servicio: " + e.getMessage()
             );
         }
 
@@ -227,12 +138,9 @@ public class OrdenServicioRepository {
     // =========================
     // 🔹 LISTAR POR ESTADO
     // =========================
-    public List<OrdenServicio> listarPorEstado(
-            String estado
-    ) {
+    public List<OrdenServicio> listarPorEstado(String estado) {
 
-        List<OrdenServicio> lista =
-                new ArrayList<>();
+        List<OrdenServicio> lista = new ArrayList<>();
 
         String sql =
                 "SELECT "
@@ -245,37 +153,20 @@ public class OrdenServicioRepository {
                         + "ORDER BY os.id_orden_servicio DESC";
 
         try (
-
-                Connection conn =
-                        DatabaseConnection.getConnection();
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql)
-
+                Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)
         ) {
-
             ps.setString(1, estado);
 
-            try (
-
-                    ResultSet rs =
-                            ps.executeQuery()
-
-            ) {
-
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-
-                    lista.add(
-                            mapearOrden(rs)
-                    );
+                    lista.add(mapearOrden(rs));
                 }
             }
 
         } catch (SQLException e) {
-
             System.err.println(
-                    "❌ Error filtrando órdenes servicio: "
-                            + e.getMessage()
+                    "❌ Error filtrando órdenes servicio por estado: " + e.getMessage()
             );
         }
 
@@ -285,12 +176,9 @@ public class OrdenServicioRepository {
     // =========================
     // 🔹 LISTAR POR CLIENTE
     // =========================
-    public List<OrdenServicio> listarPorCliente(
-            int idCliente
-    ) {
+    public List<OrdenServicio> listarPorCliente(int idCliente) {
 
-        List<OrdenServicio> lista =
-                new ArrayList<>();
+        List<OrdenServicio> lista = new ArrayList<>();
 
         String sql =
                 "SELECT "
@@ -303,37 +191,20 @@ public class OrdenServicioRepository {
                         + "ORDER BY os.id_orden_servicio DESC";
 
         try (
-
-                Connection conn =
-                        DatabaseConnection.getConnection();
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql)
-
+                Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)
         ) {
-
             ps.setInt(1, idCliente);
 
-            try (
-
-                    ResultSet rs =
-                            ps.executeQuery()
-
-            ) {
-
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-
-                    lista.add(
-                            mapearOrden(rs)
-                    );
+                    lista.add(mapearOrden(rs));
                 }
             }
 
         } catch (SQLException e) {
-
             System.err.println(
-                    "❌ Error filtrando por cliente: "
-                            + e.getMessage()
+                    "❌ Error filtrando por cliente: " + e.getMessage()
             );
         }
 
@@ -343,9 +214,7 @@ public class OrdenServicioRepository {
     // =========================
     // 🔹 BUSCAR POR ID
     // =========================
-    public OrdenServicio buscarPorId(
-            int idOrdenServicio
-    ) {
+    public OrdenServicio buscarPorId(int idOrdenServicio) {
 
         String sql =
                 "SELECT "
@@ -357,38 +226,20 @@ public class OrdenServicioRepository {
                         + "WHERE os.id_orden_servicio = ?";
 
         try (
-
-                Connection conn =
-                        DatabaseConnection.getConnection();
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql)
-
+                Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)
         ) {
+            ps.setInt(1, idOrdenServicio);
 
-            ps.setInt(
-                    1,
-                    idOrdenServicio
-            );
-
-            try (
-
-                    ResultSet rs =
-                            ps.executeQuery()
-
-            ) {
-
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-
                     return mapearOrden(rs);
                 }
             }
 
         } catch (SQLException e) {
-
             System.err.println(
-                    "❌ Error buscando orden servicio: "
-                            + e.getMessage()
+                    "❌ Error buscando orden servicio: " + e.getMessage()
             );
         }
 
@@ -396,7 +247,7 @@ public class OrdenServicioRepository {
     }
 
     // =========================
-    // 🔹 ACTUALIZAR ESTADO
+    // 🔹 ACTUALIZAR ESTADO (TRANSACCIONAL)
     // =========================
     public boolean actualizarEstado(
             Connection conn,
@@ -410,28 +261,15 @@ public class OrdenServicioRepository {
                         + "WHERE id_orden_servicio = ?";
 
         try (
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql)
-
+                PreparedStatement ps = conn.prepareStatement(sql)
         ) {
+            ps.setString(1, estado);
+            ps.setInt(2, idOrdenServicio);
 
-            ps.setString(
-                    1,
-                    estado
-            );
-
-            ps.setInt(
-                    2,
-                    idOrdenServicio
-            );
-
-            int filas =
-                    ps.executeUpdate();
+            int filas = ps.executeUpdate();
 
             System.out.println(
-                    "🔄 Estado OS actualizado: "
-                            + estado
+                    "🔄 Estado OS actualizado (Transaccional): " + estado
             );
 
             return filas > 0;
@@ -439,67 +277,57 @@ public class OrdenServicioRepository {
     }
 
     // =========================
+    // 🔹 ACTUALIZAR ESTADO (DIRECTO)
+    // =========================
+    public boolean actualizarEstado(
+            int idOrdenServicio,
+            String estado
+    ) {
+
+        String sql =
+                "UPDATE ordenes_servicio "
+                        + "SET estado = ? "
+                        + "WHERE id_orden_servicio = ?";
+
+        try (
+                Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)
+        ) {
+            ps.setString(1, estado);
+            ps.setInt(2, idOrdenServicio);
+
+            return ps.executeUpdate() > 0;
+
+        } catch (SQLException e) {
+            System.err.println(
+                    "❌ Error actualizando estado OS: " + e.getMessage()
+            );
+            return false;
+        }
+    }
+
+    // =========================
     // 🔧 MAPPER
     // =========================
-    private OrdenServicio mapearOrden(
-            ResultSet rs
-    ) throws SQLException {
+    private OrdenServicio mapearOrden(ResultSet rs) throws SQLException {
 
-        OrdenServicio orden =
-                new OrdenServicio();
+        OrdenServicio orden = new OrdenServicio();
 
-        orden.setIdOrdenServicio(
-                rs.getInt("id_orden_servicio")
-        );
+        orden.setIdOrdenServicio(rs.getInt("id_orden_servicio"));
+        orden.setIdCliente(rs.getInt("id_cliente"));
+        orden.setNombreCliente(rs.getString("nombre_cliente"));
+        orden.setEstado(rs.getString("estado"));
+        orden.setFechaCreacion(rs.getTimestamp("fecha_creacion"));
+        orden.setFechaProgramada(rs.getDate("fecha_programada"));
+        orden.setPrioridad(rs.getString("prioridad"));
+        orden.setDireccionServicio(rs.getString("direccion_servicio"));
+        orden.setContactoNombre(rs.getString("contacto_nombre"));
+        orden.setContactoTelefono(rs.getString("contacto_telefono"));
+        orden.setObservaciones(rs.getString("observaciones"));
 
-        orden.setIdCliente(
-                rs.getInt("id_cliente")
-        );
-
-        orden.setNombreCliente(
-                rs.getString("nombre_cliente")
-        );
-
-        orden.setEstado(
-                rs.getString("estado")
-        );
-
-        orden.setFechaCreacion(
-                rs.getTimestamp("fecha_creacion")
-        );
-
-        orden.setFechaProgramada(
-                rs.getDate("fecha_programada")
-        );
-
-        orden.setPrioridad(
-                rs.getString("prioridad")
-        );
-
-        orden.setDireccionServicio(
-                rs.getString("direccion_servicio")
-        );
-
-        orden.setContactoNombre(
-                rs.getString("contacto_nombre")
-        );
-
-        orden.setContactoTelefono(
-                rs.getString("contacto_telefono")
-        );
-
-        orden.setObservaciones(
-                rs.getString("observaciones")
-        );
-
-        int creadoPor =
-                rs.getInt("creado_por");
-
+        int creadoPor = rs.getInt("creado_por");
         if (!rs.wasNull()) {
-
-            orden.setCreadoPor(
-                    creadoPor
-            );
+            orden.setCreadoPor(creadoPor);
         }
 
         return orden;
