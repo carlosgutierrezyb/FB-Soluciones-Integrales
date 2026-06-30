@@ -8,82 +8,43 @@ import service.OrdenCompraService;
 import java.util.List;
 
 /**
- * Controlador de entradas de almacén.
- *
- * 🔥 ERP PRO:
- * - UI delega aquí
- * - órdenes → OrdenCompraService
- * - entradas → EntradaAlmacenService
+ * Controlador intermedio para gestionar el flujo de ingresos de mercancía al almacén.
  */
 public class EntradaAlmacenController {
 
-    private EntradaAlmacenService entradaService;
+    private final EntradaAlmacenService entradaService;
+    private final OrdenCompraService ordenService;
 
-    private OrdenCompraService ordenService;
-
-    // =========================
-    // CONSTRUCTOR
-    // =========================
     public EntradaAlmacenController() {
-
-        this.entradaService =
-                new EntradaAlmacenService();
-
-        this.ordenService =
-                new OrdenCompraService();
+        this.entradaService = new EntradaAlmacenService();
+        this.ordenService = new OrdenCompraService();
     }
 
-    // =========================
-    // 🔹 ÓRDENES PENDIENTES
-    // =========================
+    /**
+     * Recupera la lista de órdenes de compra aptas para recibir mercancía.
+     */
     public List<OrdenCompra> obtenerOrdenesPendientes() {
-
         return ordenService.obtenerOrdenesPendientes();
     }
 
-    // =========================
-    // 🔹 DETALLE DE ORDEN
-    // =========================
-    public List<DetalleOrdenCompra> obtenerDetalleOrden(
-            int idOrden
-    ) {
-
-        return ordenService.obtenerDetalleOrden(
-                idOrden
-        );
+    /**
+     * Devuelve los items y las cantidades estipuladas para una orden específica.
+     */
+    public List<DetalleOrdenCompra> obtenerDetalleOrden(int idOrden) {
+        return ordenService.obtenerDetalleOrden(idOrden);
     }
 
-    // =========================
-    // 🔹 CANTIDAD RECIBIDA
-    // =========================
-    public int obtenerCantidadRecibida(
-            int idItem,
-            int idOrden
-    ) {
-
-        return entradaService.obtenerCantidadRecibida(
-                idItem,
-                idOrden
-        );
+    /**
+     * Consulta la cantidad total acumulada que ya ha ingresado de un item específico.
+     */
+    public int obtenerCantidadRecibida(int idItem, int idOrden) {
+        return entradaService.obtenerCantidadRecibida(idItem, idOrden);
     }
 
-    // =========================
-    // 🔥 REGISTRAR ENTRADA
-    // =========================
-    public String registrarEntrada(
-            int idOrden,
-            int idItem,
-            int cantidad,
-            String numeroFactura,
-            String numeroRemision
-    ) {
-
-        return entradaService.registrarEntrada(
-                idOrden,
-                idItem,
-                cantidad,
-                numeroFactura,
-                numeroRemision
-        );
+    /**
+     * Despacha el registro de una nueva recepción parcial o total hacia la capa de negocio.
+     */
+    public String registrarEntrada(int idOrden, int idItem, int cantidad, String numeroFactura, String numeroRemision) {
+        return entradaService.registrarEntrada(idOrden, idItem, cantidad, numeroFactura, numeroRemision);
     }
 }

@@ -1,70 +1,42 @@
 package model;
 
 import exception.BusinessException;
-
+import java.sql.Date;
 import java.sql.Timestamp;
 
 /**
- * Entidad Orden de Servicio.
- *
- * 🔥 ERP:
- * Representa una solicitud de servicio
- * realizada por un cliente.
+ * Entidad de dominio que representa una orden de servicio (OS) generada
+ * para un cliente, consolidando la información de cabecera del requerimiento.
  */
 public class OrdenServicio {
 
-    // =========================
-    // ATRIBUTOS
-    // =========================
-
     private int idOrdenServicio;
-
     private int idCliente;
-
     private String nombreCliente;
-
-    /*
-     * Estados ERP:
-     * - Pendiente
-     * - Agendada
-     * - En ejecución
-     * - Ejecutada
-     * - Facturada
-     * - Cancelada
-     */
     private String estado;
-
     private Timestamp fechaCreacion;
-
-    private java.sql.Date fechaProgramada;
-
+    private Date fechaProgramada;
     private String prioridad;
-
     private String direccionServicio;
-
     private String contactoNombre;
-
     private String contactoTelefono;
-
     private String observaciones;
-
     private Integer creadoPor;
 
-    // 🔥 NUEVOS ATRIBUTOS PARA OPERACIONES Y FLUJO OPERATIVO
     private Integer idTecnico;
-
     private Timestamp fechaInicio;
-
     private Timestamp fechaFin;
-
     private String estadoFacturacion;
 
-    // =========================
-    // GETTERS
-    // =========================
+    public OrdenServicio() {
+    }
 
     public int getIdOrdenServicio() {
         return idOrdenServicio;
+    }
+
+    public void setIdOrdenServicio(int idOrdenServicio) {
+        this.idOrdenServicio = idOrdenServicio;
     }
 
     public int getId() {
@@ -75,195 +47,180 @@ public class OrdenServicio {
         return idCliente;
     }
 
-    public String getNombreCliente() {
-        return nombreCliente;
-    }
-
-    public String getEstado() {
-        return estado;
-    }
-
-    public Timestamp getFechaCreacion() {
-        return fechaCreacion;
-    }
-
-    public java.sql.Date getFechaProgramada() {
-        return fechaProgramada;
-    }
-
-    public String getPrioridad() {
-        return prioridad;
-    }
-
-    public String getDireccionServicio() {
-        return direccionServicio;
-    }
-
-    public String getContactoNombre() {
-        return contactoNombre;
-    }
-
-    public String getContactoTelefono() {
-        return contactoTelefono;
-    }
-
-    public String getObservaciones() {
-        return observaciones;
-    }
-
-    // Método de alias por si el repositorio requiere buscarlo en inglés
-    public String getObservations() {
-        return observaciones;
-    }
-
-    public Integer getCreadoPor() {
-        return creadoPor;
-    }
-
-    // 🔥 GETTERS NUEVOS
-    public Integer getIdTecnico() {
-        return idTecnico;
-    }
-
-    public Timestamp getFechaInicio() {
-        return fechaInicio;
-    }
-
-    public Timestamp getFechaFin() {
-        return fechaFin;
-    }
-
-    public String getEstadoFacturacion() {
-        return estadoFacturacion;
-    }
-
-    // =========================
-    // SETTERS
-    // =========================
-
-    public void setIdOrdenServicio(int idOrdenServicio) {
-        this.idOrdenServicio = idOrdenServicio;
-    }
-
     public void setIdCliente(int idCliente) {
         if (idCliente <= 0) {
-            throw new BusinessException("El cliente es obligatorio.");
+            throw new BusinessException("El identificador del cliente debe ser un valor positivo válido.");
         }
         this.idCliente = idCliente;
+    }
+
+    public String getNombreCliente() {
+        return nombreCliente;
     }
 
     public void setNombreCliente(String nombreCliente) {
         this.nombreCliente = nombreCliente;
     }
 
+    public String getEstado() {
+        return estado;
+    }
+
+    /**
+     * Define el estado actual de la orden de servicio validando que pertenezca
+     * al ciclo de vida oficial definido en las reglas de negocio del ERP.
+     *
+     * @param estado Etiqueta del estado (Pendiente, Asignada, En ejecución, Finalizada, Cancelada).
+     */
     public void setEstado(String estado) {
         if (estado == null || estado.trim().isEmpty()) {
-            throw new BusinessException("El estado es obligatorio.");
+            throw new BusinessException("El estado de la orden de servicio no puede estar vacío.");
         }
 
-        estado = estado.trim();
-
-        switch (estado) {
+        String estadoNormalizado = estado.trim();
+        switch (estadoNormalizado) {
             case "Pendiente":
-            case "Agendada":
+            case "Asignada":
             case "En ejecución":
-            case "Ejecutada":
-            case "Facturada":
+            case "Finalizada":
             case "Cancelada":
-                this.estado = estado;
+                this.estado = estadoNormalizado;
                 break;
             default:
-                throw new BusinessException("Estado inválido: " + estado);
+                throw new BusinessException("El estado '" + estado + "' no es válido para el flujo de trabajo del ERP.");
         }
+    }
+
+    public Timestamp getFechaCreacion() {
+        return fechaCreacion;
     }
 
     public void setFechaCreacion(Timestamp fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 
-    public void setFechaProgramada(java.sql.Date fechaProgramada) {
+    public Date getFechaProgramada() {
+        return fechaProgramada;
+    }
+
+    public void setFechaProgramada(Date fechaProgramada) {
         if (fechaProgramada == null) {
-            throw new BusinessException("La fecha programada es obligatoria.");
+            throw new BusinessException("La fecha de programación del servicio es obligatoria.");
         }
         this.fechaProgramada = fechaProgramada;
     }
 
-    public void setPrioridad(String prioridad) {
-        if (prioridad == null || prioridad.trim().isEmpty()) {
-            throw new BusinessException("La prioridad es obligatoria.");
+    public String getPrioridad() {
+        return prioridad;
+    }
+
+    /**
+     * Define el nivel de prioridad de atención requerido para el servicio.
+     *
+     * @param priority Nivel de urgencia (Alta, Media, Baja).
+     */
+    public void setPrioridad(String priority) {
+        if (priority == null || priority.trim().isEmpty()) {
+            throw new BusinessException("La prioridad de la orden de servicio es obligatoria.");
         }
 
-        prioridad = prioridad.trim();
-
-        switch (prioridad) {
+        String prioridadNormalizada = priority.trim();
+        switch (prioridadNormalizada) {
             case "Alta":
             case "Media":
             case "Baja":
-                this.prioridad = prioridad;
+                this.prioridad = prioridadNormalizada;
                 break;
             default:
-                throw new BusinessException("Prioridad inválida.");
+                throw new BusinessException("La prioridad especificada es inválida.");
         }
+    }
+
+    public String getDireccionServicio() {
+        return direccionServicio;
     }
 
     public void setDireccionServicio(String direccionServicio) {
         this.direccionServicio = direccionServicio;
     }
 
+    public String getContactoNombre() {
+        return contactoNombre;
+    }
+
     public void setContactoNombre(String contactoNombre) {
         this.contactoNombre = contactoNombre;
+    }
+
+    public String getContactoTelefono() {
+        return contactoTelefono;
     }
 
     public void setContactoTelefono(String contactoTelefono) {
         this.contactoTelefono = contactoTelefono;
     }
 
+    public String getObservaciones() {
+        return observaciones;
+    }
+
+    public String getObservations() {
+        return observaciones;
+    }
+
     public void setObservaciones(String observaciones) {
         this.observaciones = observaciones;
+    }
+
+    public Integer getCreadoPor() {
+        return creadoPor;
     }
 
     public void setCreadoPor(Integer creadoPor) {
         this.creadoPor = creadoPor;
     }
 
-    // 🔥 SETTERS NUEVOS
+    public Integer getIdTecnico() {
+        return idTecnico;
+    }
+
     public void setIdTecnico(Integer idTecnico) {
         this.idTecnico = idTecnico;
+    }
+
+    public Timestamp getFechaInicio() {
+        return fechaInicio;
     }
 
     public void setFechaInicio(Timestamp fechaInicio) {
         this.fechaInicio = fechaInicio;
     }
 
+    public Timestamp getFechaFin() {
+        return fechaFin;
+    }
+
     public void setFechaFin(Timestamp fechaFin) {
         this.fechaFin = fechaFin;
+    }
+
+    public String getEstadoFacturacion() {
+        return estadoFacturacion;
     }
 
     public void setEstadoFacturacion(String estadoFacturacion) {
         this.estadoFacturacion = estadoFacturacion;
     }
 
-    // =========================
-    // UI / DEBUG
-    // =========================
-
     @Override
     public String toString() {
-        return "OS #" + idOrdenServicio + " - " + estado;
+        return "OS #" + idOrdenServicio + " [" + estado + "]";
     }
-
-    // =========================
-    // EQUALS / HASHCODE
-    // =========================
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof OrdenServicio)) {
-            return false;
-        }
+        if (this == o) return true;
+        if (!(o instanceof OrdenServicio)) return false;
         OrdenServicio that = (OrdenServicio) o;
         return idOrdenServicio == that.idOrdenServicio;
     }

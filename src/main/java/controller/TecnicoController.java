@@ -19,52 +19,48 @@ public class TecnicoController {
     private final TecnicoRepository repository;
 
     public TecnicoController() {
-
-        this.repository =
-                new TecnicoRepository();
+        this.repository = new TecnicoRepository();
     }
 
     // =========================
     // LISTAR TODOS
     // =========================
-
     public List<Tecnico> listarTodos() {
-
         return repository.listarTodos();
     }
 
     // =========================
     // LISTAR ACTIVOS
     // =========================
-
     public List<Tecnico> listarActivos() {
-
         return repository.listarActivos();
     }
 
     // =========================
     // LISTAR POR ESPECIALIDAD
     // =========================
-
-    public List<Tecnico> listarPorEspecialidad(
-            int idEspecialidad
-    ) {
-
-        return repository.listarPorEspecialidad(
-                idEspecialidad
-        );
+    public List<Tecnico> listarPorEspecialidad(int idEspecialidad) {
+        return repository.listarPorEspecialidad(idEspecialidad);
     }
 
     // =========================
     // BUSCAR POR ID
     // =========================
+    public Tecnico buscarPorId(int idTecnico) {
+        return repository.buscarPorId(idTecnico);
+    }
 
-    public Tecnico buscarPorId(
-            int idTecnico
-    ) {
+    // ==========================================
+    // 🔥 NUEVO: LISTAR POR ORDEN CON ESPECIALIDAD
+    // ==========================================
+    public List<Tecnico> listarPorOrdenConEspecialidad(int idOrden) {
+        return repository.listarPorOrdenConEspecialidad(idOrden);
+    }
 
-        return repository.buscarPorId(
-                idTecnico
-        );
+    // ==========================================
+    // 🔥 NUEVO: ASIGNAR TÉCNICO A ORDEN
+    // ==========================================
+    public String asignarTecnicoAOrden(int idOrden, int idTecnico) {
+        return repository.asignarTecnicoAOrden(idOrden, idTecnico);
     }
 }

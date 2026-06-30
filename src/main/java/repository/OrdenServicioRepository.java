@@ -8,64 +8,40 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Repository de órdenes de servicio.
- *
- * 🔥 ERP PRO:
- * - Repositorio Maestro de la Cabecera de la Orden.
- * - Libre de lógica de técnicos/operativa directa.
- * - Flujo alineado con los estados reales del ERP.
+ * Componente de persistencia encargado de gestionar las operaciones CRUD de la base de datos
+ * para la cabecera de las órdenes de servicio de la compañía.
  */
 public class OrdenServicioRepository {
 
-    // =========================
-    // 🔹 CREAR ORDEN (NORMAL)
-    // =========================
+    /**
+     * Registra una orden de servicio en la base de datos utilizando una conexión dedicada.
+     *
+     * @param orden Entidad que contiene la información de la cabecera.
+     * @return El identificador autogenerado por el motor relacional, o -1 en caso de fallo.
+     */
     public int crear(OrdenServicio orden) {
-
-        try (
-                Connection conn = DatabaseConnection.getConnection()
-        ) {
+        try (Connection conn = DatabaseConnection.getConnection()) {
             return crear(orden, conn);
-
         } catch (SQLException e) {
-            System.err.println(
-                    "❌ Error creando orden servicio: " + e.getMessage()
-            );
+            System.err.println("Error al crear orden de servicio: " + e.getMessage());
             return -1;
         }
     }
 
-    // =========================
-    // 🔹 CREAR ORDEN (TRANSACCIONAL)
-    // =========================
-    public int crear(
-            OrdenServicio orden,
-            Connection conn
-    ) throws SQLException {
+    /**
+     * Inserta el registro de la orden dentro de un contexto transaccional controlado externamente.
+     *
+     * @param orden Entidad con la información de la orden.
+     * @param conn  Conexión activa compartida por la transacción de la capa de servicio.
+     * @return El identificador autogenerado de la orden de servicio instalada.
+     * @throws SQLException Si ocurre algún error de sintaxis o de restricciones en la base de datos.
+     */
+    public int crear(OrdenServicio orden, Connection conn) throws SQLException {
+        String sql = "INSERT INTO ordenes_servicio (id_cliente, fecha_programada, prioridad, estado, " +
+                "direccion_servicio, contacto_nombre, contacto_telefono, observaciones, creado_por) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
-        String sql =
-                "INSERT INTO ordenes_servicio "
-                        + "("
-                        + "id_cliente, "
-                        + "fecha_programada, "
-                        + "prioridad, "
-                        + "estado, "
-                        + "direccion_servicio, "
-                        + "contacto_nombre, "
-                        + "contacto_telefono, "
-                        + "observaciones, "
-                        + "creado_por"
-                        + ") "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        try (
-                PreparedStatement ps = conn.prepareStatement(
-                        sql,
-                        PreparedStatement.RETURN_GENERATED_KEYS
-                )
-        ) {
-            System.out.println("🛠️ Creando orden de servicio...");
-
+        try (PreparedStatement ps = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, orden.getIdCliente());
             ps.setDate(2, orden.getFechaProgramada());
             ps.setString(3, orden.getPrioridad());
@@ -73,8 +49,6 @@ public class OrdenServicioRepository {
             ps.setString(5, orden.getDireccionServicio());
             ps.setString(6, orden.getContactoNombre());
             ps.setString(7, orden.getContactoTelefono());
-
-            // 🔥 CORRECCIÓN 1: Se eliminó el operador ternario incompleto que no compilaba
             ps.setString(8, orden.getObservaciones());
 
             if (orden.getCreadoPor() != null) {
@@ -83,236 +57,173 @@ public class OrdenServicioRepository {
                 ps.setNull(9, Types.INTEGER);
             }
 
-            int filas = ps.executeUpdate();
-
-            if (filas == 0) {
-                throw new SQLException("No se pudo crear la orden.");
+            int filasAfectadas = ps.executeUpdate();
+            if (filasAfectadas == 0) {
+                throw new SQLException("La inserción de la orden de servicio no afectó ninguna fila.");
             }
 
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
-                    int idGenerado = rs.getInt(1);
-                    System.out.println("✅ Orden servicio creada ID: " + idGenerado);
-                    return idGenerado;
+                    return rs.getInt(1);
                 }
             }
-
-            throw new SQLException("No se obtuvo ID.");
+            throw new SQLException("Error al recuperar la clave primaria generada para la orden.");
         }
     }
 
-    // =========================
-    // 🔹 LISTAR TODAS
-    // =========================
+    /**
+     * Obtiene el universo total de órdenes de servicio vinculando el nombre del cliente asociado.
+     *
+     * @return Lista completa de instancias de OrdenServicio.
+     */
     public List<OrdenServicio> listarTodas() {
-
         List<OrdenServicio> lista = new ArrayList<>();
+        String sql = "SELECT os.*, c.nombre AS nombre_cliente FROM ordenes_servicio os " +
+                "INNER JOIN clientes c ON os.id_cliente = c.id_cliente ORDER BY os.id_orden_servicio DESC";
 
-        String sql =
-                "SELECT "
-                        + "os.*, "
-                        + "c.nombre AS nombre_cliente "
-                        + "FROM ordenes_servicio os "
-                        + "INNER JOIN clientes c "
-                        + "ON os.id_cliente = c.id_cliente "
-                        + "ORDER BY os.id_orden_servicio DESC";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
 
-        try (
-                Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql);
-                ResultSet rs = ps.executeQuery()
-        ) {
             while (rs.next()) {
                 lista.add(mapearOrden(rs));
             }
-
         } catch (SQLException e) {
-            System.err.println(
-                    "❌ Error listando órdenes servicio: " + e.getMessage()
-            );
+            System.err.println("Error al listar todas las órdenes de servicio: " + e.getMessage());
         }
-
         return lista;
     }
 
-    // =========================
-    // 🔹 LISTAR POR ESTADO
-    // =========================
+    /**
+     * Filtra y lista las órdenes de servicio que se ubiquen en un estado operativo particular.
+     *
+     * @param estado Estado de interés (Ej: Pendiente, En ejecución, Finalizada).
+     * @return Lista de órdenes de servicio bajo el estado provisto.
+     */
     public List<OrdenServicio> listarPorEstado(String estado) {
-
         List<OrdenServicio> lista = new ArrayList<>();
+        String sql = "SELECT os.*, c.nombre AS nombre_cliente FROM ordenes_servicio os " +
+                "INNER JOIN clientes c ON os.id_cliente = c.id_cliente " +
+                "WHERE os.estado = ? ORDER BY os.id_orden_servicio DESC";
 
-        String sql =
-                "SELECT "
-                        + "os.*, "
-                        + "c.nombre AS nombre_cliente "
-                        + "FROM ordenes_servicio os "
-                        + "INNER JOIN clientes c "
-                        + "ON os.id_cliente = c.id_cliente "
-                        + "WHERE os.estado = ? "
-                        + "ORDER BY os.id_orden_servicio DESC";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-        try (
-                Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
             ps.setString(1, estado);
-
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     lista.add(mapearOrden(rs));
                 }
             }
-
         } catch (SQLException e) {
-            System.err.println(
-                    "❌ Error filtrando órdenes servicio por estado: " + e.getMessage()
-            );
+            System.err.println("Error al filtrar órdenes por estado: " + e.getMessage());
         }
-
         return lista;
     }
 
-    // =========================
-    // 🔹 LISTAR POR CLIENTE
-    // =========================
+    /**
+     * Recupera el historial de órdenes de servicio ligadas a un cliente.
+     *
+     * @param idCliente Identificador único del cliente.
+     * @return Lista de órdenes de servicio registradas a nombre del cliente.
+     */
     public List<OrdenServicio> listarPorCliente(int idCliente) {
-
         List<OrdenServicio> lista = new ArrayList<>();
+        String sql = "SELECT os.*, c.nombre AS nombre_cliente FROM ordenes_servicio os " +
+                "INNER JOIN clientes c ON os.id_cliente = c.id_cliente " +
+                "WHERE os.id_cliente = ? ORDER BY os.id_orden_servicio DESC";
 
-        String sql =
-                "SELECT "
-                        + "os.*, "
-                        + "c.nombre AS nombre_cliente "
-                        + "FROM ordenes_servicio os "
-                        + "INNER JOIN clientes c "
-                        + "ON os.id_cliente = c.id_cliente "
-                        + "WHERE os.id_cliente = ? "
-                        + "ORDER BY os.id_orden_servicio DESC";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-        try (
-                Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
             ps.setInt(1, idCliente);
-
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     lista.add(mapearOrden(rs));
                 }
             }
-
         } catch (SQLException e) {
-            System.err.println(
-                    "❌ Error filtrando por cliente: " + e.getMessage()
-            );
+            System.err.println("Error al filtrar órdenes por cliente: " + e.getMessage());
         }
-
         return lista;
     }
 
-    // =========================
-    // 🔹 BUSCAR POR ID
-    // =========================
+    /**
+     * Busca la cabecera de una orden de servicio basándose en su clave primaria relacional.
+     *
+     * @param idOrdenServicio Clave primaria de la orden.
+     * @return Entidad completa mapeada, o null si el registro no es localizado.
+     */
     public OrdenServicio buscarPorId(int idOrdenServicio) {
+        String sql = "SELECT os.*, c.nombre AS nombre_cliente FROM ordenes_servicio os " +
+                "INNER JOIN clientes c ON os.id_cliente = c.id_cliente WHERE os.id_orden_servicio = ?";
 
-        String sql =
-                "SELECT "
-                        + "os.*, "
-                        + "c.nombre AS nombre_cliente "
-                        + "FROM ordenes_servicio os "
-                        + "INNER JOIN clientes c "
-                        + "ON os.id_cliente = c.id_cliente "
-                        + "WHERE os.id_orden_servicio = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-        try (
-                Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
             ps.setInt(1, idOrdenServicio);
-
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return mapearOrden(rs);
                 }
             }
-
         } catch (SQLException e) {
-            System.err.println(
-                    "❌ Error buscando orden servicio: " + e.getMessage()
-            );
+            System.err.println("Error al buscar orden de servicio por ID: " + e.getMessage());
         }
-
         return null;
     }
 
-    // =========================
-    // 🔹 ACTUALIZAR ESTADO (TRANSACCIONAL)
-    // =========================
-    public boolean actualizarEstado(
-            Connection conn,
-            int idOrdenServicio,
-            String estado
-    ) throws SQLException {
-
-        String sql =
-                "UPDATE ordenes_servicio "
-                        + "SET estado = ? "
-                        + "WHERE id_orden_servicio = ?";
-
-        try (
-                PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
+    /**
+     * Actualiza el estado macro de una orden compartiendo una transacción activa de la capa intermedia.
+     *
+     * @param idOrdenServicio Identificador de la orden.
+     * @param estado          Nuevo estado operativo global.
+     * @param conn            Conexión relacional transaccional.
+     * @return true si se actualizó el registro con éxito, false en caso contrario.
+     * @throws SQLException Si ocurre un error interno de ejecución SQL en el lote de la transacción.
+     */
+    public boolean actualizarEstadoTransaccional(int idOrdenServicio, String estado, Connection conn) throws SQLException {
+        String sql = "UPDATE ordenes_servicio SET estado = ? WHERE id_orden_servicio = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, estado);
             ps.setInt(2, idOrdenServicio);
-
-            int filas = ps.executeUpdate();
-
-            System.out.println(
-                    "🔄 Estado OS actualizado (Transaccional): " + estado
-            );
-
-            return filas > 0;
+            return ps.executeUpdate() > 0;
         }
     }
 
-    // =========================
-    // 🔹 ACTUALIZAR ESTADO (DIRECTO)
-    // =========================
-    public boolean actualizarEstado(
-            int idOrdenServicio,
-            String estado
-    ) {
+    /**
+     * Método heredado para actualizar el estado del registro relacional de forma aislada.
+     */
+    public boolean actualizarEstado(Connection conn, int idOrdenServicio, String estado) throws SQLException {
+        return actualizarEstadoTransaccional(idOrdenServicio, estado, conn);
+    }
 
-        String sql =
-                "UPDATE ordenes_servicio "
-                        + "SET estado = ? "
-                        + "WHERE id_orden_servicio = ?";
+    /**
+     * Actualiza el estado general de una orden de servicio de forma directa e independiente.
+     *
+     * @param idOrdenServicio Identificador de la orden.
+     * @param estado          Nuevo estado operacional de destino.
+     * @return true si la fila fue modificada, de lo contrario false.
+     */
+    public boolean actualizarEstado(int idOrdenServicio, String estado) {
+        String sql = "UPDATE ordenes_servicio SET estado = ? WHERE id_orden_servicio = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-        try (
-                Connection conn = DatabaseConnection.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)
-        ) {
             ps.setString(1, estado);
             ps.setInt(2, idOrdenServicio);
-
             return ps.executeUpdate() > 0;
-
         } catch (SQLException e) {
-            System.err.println(
-                    "❌ Error actualizando estado OS: " + e.getMessage()
-            );
+            System.err.println("Error al actualizar estado directo de la OS: " + e.getMessage());
             return false;
         }
     }
 
-    // =========================
-    // 🔧 MAPPER
-    // =========================
+    /**
+     * Traduce el registro actual de un ResultSet a una estructura de datos orientada a objetos de tipo OrdenServicio.
+     */
     private OrdenServicio mapearOrden(ResultSet rs) throws SQLException {
-
         OrdenServicio orden = new OrdenServicio();
-
         orden.setIdOrdenServicio(rs.getInt("id_orden_servicio"));
         orden.setIdCliente(rs.getInt("id_cliente"));
         orden.setNombreCliente(rs.getString("nombre_cliente"));
@@ -329,7 +240,6 @@ public class OrdenServicioRepository {
         if (!rs.wasNull()) {
             orden.setCreadoPor(creadoPor);
         }
-
         return orden;
     }
 }

@@ -10,490 +10,207 @@ import java.awt.*;
 import java.util.List;
 
 /**
- * Vista de Entrada de Almacén
- *
- * 🔥 ERP PRO:
- * - Recepción parcial o total
- * - Trazabilidad logística
- * - Control de remisiones
- * - Validación contra factura proveedor
- *
- * ⚠ IMPORTANTE:
- * Entrada Almacén = logística.
- * Factura Compra = contabilidad.
+ * Interfaz para la recepción y control de mercancías contra órdenes de compra.
  */
 public class EntradaAlmacenView extends JFrame {
 
-    // =========================
-    // COMPONENTES
-    // =========================
-
     private JComboBox<OrdenCompra> comboOrdenes;
-
     private JTable tabla;
-
     private DefaultTableModel modelo;
 
     private JTextField txtCantidadRecibida;
-
     private JTextField txtNumeroFactura;
-
     private JTextField txtNumeroRemision;
 
     private JButton btnCargarOrden;
-
     private JButton btnRegistrarEntrada;
 
     private EntradaAlmacenController controller;
 
-    // =========================
-    // SET CONTROLLER
-    // =========================
-    public void setController(
-            EntradaAlmacenController controller
-    ) {
-
+    public void setController(EntradaAlmacenController controller) {
         this.controller = controller;
+        // Al asignar el controlador, forzamos la carga fresca de órdenes pendientes
+        cargarOrdenes();
     }
 
-    // =========================
-    // CONSTRUCTOR
-    // =========================
     public EntradaAlmacenView() {
-
-        setTitle(
-                "F&B Soluciones Integrales - Entrada de Almacén"
-        );
-
+        setTitle("F&B Soluciones Integrales - Entrada de Almacén");
         setSize(950, 600);
-
         setLocationRelativeTo(null);
-
-        setLayout(
-                new BorderLayout(10, 10)
-        );
+        setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+        setLayout(new BorderLayout(10, 10));
 
         inicializarComponentes();
     }
 
-    // =========================
-    // COMPONENTES UI
-    // =========================
     private void inicializarComponentes() {
+        // Panel de selección superior
+        JPanel panelTop = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        comboOrdenes = new JComboBox<>();
+        comboOrdenes.setPreferredSize(new Dimension(300, 26));
 
-        // =========================
-        // PANEL SUPERIOR
-        // =========================
+        btnCargarOrden = new JButton("Cargar Orden");
 
-        JPanel panelTop =
-                new JPanel(
-                        new FlowLayout(
-                                FlowLayout.LEFT
-                        )
-                );
-
-        comboOrdenes =
-                new JComboBox<>();
-
-        btnCargarOrden =
-                new JButton(
-                        "Cargar Orden"
-                );
-
-        panelTop.add(
-                new JLabel(
-                        "Orden de Compra:"
-                )
-        );
-
+        panelTop.add(new JLabel("Orden de Compra:"));
         panelTop.add(comboOrdenes);
-
         panelTop.add(btnCargarOrden);
+        add(panelTop, BorderLayout.NORTH);
 
-        add(
-                panelTop,
-                BorderLayout.NORTH
-        );
+        // Configuración de la tabla de items
+        modelo = new DefaultTableModel(
+                new Object[]{"ID ITEM", "Producto", "Cantidad Pedida", "Cantidad Recibida", "Pendiente"}, 0
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
-        // =========================
-        // TABLA
-        // =========================
+        tabla = new JTable(modelo);
 
-        modelo =
-                new DefaultTableModel(
-                        new Object[]{
-                                "ID ITEM",
-                                "Producto",
-                                "Cantidad Pedida",
-                                "Cantidad Recibida",
-                                "Pendiente"
-                        },
-                        0
-                ) {
+        // Ocultar columna ID del item para mantener limpia la UI
+        tabla.getColumnModel().getColumn(0).setMinWidth(0);
+        tabla.getColumnModel().getColumn(0).setMaxWidth(0);
+        tabla.getColumnModel().getColumn(0).setWidth(0);
 
-                    @Override
-                    public boolean isCellEditable(
-                            int row,
-                            int column
-                    ) {
+        add(new JScrollPane(tabla), BorderLayout.CENTER);
 
-                        return false;
-                    }
-                };
+        // Panel de operaciones inferior
+        JPanel panelBottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 10));
+        txtCantidadRecibida = new JTextField(8);
+        txtNumeroFactura = new JTextField(12);
+        txtNumeroRemision = new JTextField(12);
+        btnRegistrarEntrada = new JButton("Registrar Entrada");
 
-        tabla =
-                new JTable(modelo);
-
-        // 🔥 OCULTAR COLUMNA ID ITEM
-        tabla.getColumnModel()
-                .getColumn(0)
-                .setMinWidth(0);
-
-        tabla.getColumnModel()
-                .getColumn(0)
-                .setMaxWidth(0);
-
-        tabla.getColumnModel()
-                .getColumn(0)
-                .setWidth(0);
-
-        add(
-                new JScrollPane(tabla),
-                BorderLayout.CENTER
-        );
-
-        // =========================
-        // PANEL INFERIOR
-        // =========================
-
-        JPanel panelBottom =
-                new JPanel(
-                        new FlowLayout()
-                );
-
-        txtCantidadRecibida =
-                new JTextField(8);
-
-        txtNumeroFactura =
-                new JTextField(12);
-
-        txtNumeroRemision =
-                new JTextField(12);
-
-        btnRegistrarEntrada =
-                new JButton(
-                        "Registrar Entrada"
-                );
-
-        // =========================
-        // ESTILO BOTÓN
-        // =========================
-
-        btnRegistrarEntrada.setBackground(
-                new Color(0, 102, 204)
-        );
-
-        btnRegistrarEntrada.setForeground(
-                Color.WHITE
-        );
-
-        btnRegistrarEntrada.setFocusPainted(false);
-
+        // Configuración del botón azul de guardado logístico
+        btnRegistrarEntrada.setBackground(new Color(0, 102, 204));
+        btnRegistrarEntrada.setForeground(Color.WHITE);
         btnRegistrarEntrada.setContentAreaFilled(true);
-
         btnRegistrarEntrada.setOpaque(true);
-
         btnRegistrarEntrada.setBorderPainted(false);
+        btnRegistrarEntrada.setFocusPainted(false);
+        btnRegistrarEntrada.setCursor(new Cursor(Cursor.HAND_CURSOR));
 
-        // =========================
-        // COMPONENTES PANEL
-        // =========================
+        panelBottom.add(new JLabel("Cantidad:"));
+        panelBottom.add(txtCantidadRecibida);
+        panelBottom.add(new JLabel("Factura:"));
+        panelBottom.add(txtNumeroFactura);
+        panelBottom.add(new JLabel("Remisión:"));
+        panelBottom.add(txtNumeroRemision);
+        panelBottom.add(btnRegistrarEntrada);
+        add(panelBottom, BorderLayout.SOUTH);
 
-        panelBottom.add(
-                new JLabel("Cantidad:")
-        );
-
-        panelBottom.add(
-                txtCantidadRecibida
-        );
-
-        panelBottom.add(
-                new JLabel("Factura:")
-        );
-
-        panelBottom.add(
-                txtNumeroFactura
-        );
-
-        panelBottom.add(
-                new JLabel("Remisión:")
-        );
-
-        panelBottom.add(
-                txtNumeroRemision
-        );
-
-        panelBottom.add(
-                btnRegistrarEntrada
-        );
-
-        add(
-                panelBottom,
-                BorderLayout.SOUTH
-        );
-
-        // =========================
-        // EVENTOS
-        // =========================
-
-        btnCargarOrden.addActionListener(
-                e -> cargarDetalleOrden()
-        );
-
-        btnRegistrarEntrada.addActionListener(
-                e -> registrarEntrada()
-        );
+        // Enlace de acciones
+        btnCargarOrden.addActionListener(e -> cargarDetalleOrden());
+        btnRegistrarEntrada.addActionListener(e -> registrarEntrada());
     }
 
-    // =========================
-    // CARGAR ÓRDENES
-    // =========================
+    /**
+     * Consulta las órdenes activas en la base de datos y actualiza el combobox.
+     */
     public void cargarOrdenes() {
+        if (controller == null) return;
 
         comboOrdenes.removeAllItems();
-
-        List<OrdenCompra> lista =
-                controller.obtenerOrdenesPendientes();
-
+        List<OrdenCompra> lista = controller.obtenerOrdenesPendientes();
         for (OrdenCompra o : lista) {
-
             comboOrdenes.addItem(o);
         }
     }
 
-    // =========================
-    // PRESELECCIONAR ORDEN
-    // =========================
-    public void seleccionarOrden(
-            OrdenCompra orden
-    ) {
-
+    /**
+     * Permite enfocar de manera externa una orden específica y cargar sus renglones automáticamente.
+     */
+    public void seleccionarOrden(OrdenCompra orden) {
         comboOrdenes.setSelectedItem(orden);
-
         cargarDetalleOrden();
     }
 
-    // =========================
-    // CARGAR DETALLE
-    // =========================
+    /**
+     * Mapea los productos de la orden seleccionada calculando las cantidades pendientes de ingreso.
+     */
     private void cargarDetalleOrden() {
-
-        OrdenCompra orden =
-                (OrdenCompra)
-                        comboOrdenes.getSelectedItem();
-
+        OrdenCompra orden = (OrdenCompra) comboOrdenes.getSelectedItem();
         if (orden == null) {
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Seleccione una orden."
-            );
-
+            JOptionPane.showMessageDialog(this, "Seleccione una orden.", "Validación", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         modelo.setRowCount(0);
-
-        List<DetalleOrdenCompra> detalles =
-                controller.obtenerDetalleOrden(
-                        orden.getId()
-                );
+        List<DetalleOrdenCompra> detalles = controller.obtenerDetalleOrden(orden.getId());
 
         for (DetalleOrdenCompra d : detalles) {
+            int recibido = controller.obtenerCantidadRecibida(d.getIdItem(), orden.getId());
+            int pendiente = d.getCantidadPedida() - recibido;
 
-            int recibido =
-                    controller.obtenerCantidadRecibida(
-                            d.getIdItem(),
-                            orden.getId()
-                    );
-
-            int pendiente =
-                    d.getCantidadPedida()
-                            - recibido;
-
-            modelo.addRow(
-                    new Object[]{
-
-                            // 🔥 ID OCULTO
-                            d.getIdItem(),
-
-                            // 🔥 NOMBRE PRODUCTO
-                            d.getNombreItem(),
-
-                            d.getCantidadPedida(),
-
-                            recibido,
-
-                            pendiente
-                    }
-            );
+            modelo.addRow(new Object[]{
+                    d.getIdItem(),
+                    d.getNombreItem(),
+                    d.getCantidadPedida(),
+                    recibido,
+                    pendiente
+            });
         }
     }
 
-    // =========================
-    // REGISTRAR ENTRADA
-    // =========================
+    /**
+     * Valida el remanente físico del item seleccionado y registra la novedad en el almacén.
+     */
     private void registrarEntrada() {
-
-        int fila =
-                tabla.getSelectedRow();
-
+        int fila = tabla.getSelectedRow();
         if (fila == -1) {
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Seleccione un producto."
-            );
-
+            JOptionPane.showMessageDialog(this, "Seleccione un producto de la tabla.", "Validación", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        OrdenCompra orden =
-                (OrdenCompra)
-                        comboOrdenes.getSelectedItem();
-
+        OrdenCompra orden = (OrdenCompra) comboOrdenes.getSelectedItem();
         if (orden == null) {
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Seleccione una orden."
-            );
-
+            JOptionPane.showMessageDialog(this, "Seleccione una orden válida.", "Validación", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // 🔥 EL ID SIGUE EXISTIENDO
-        // SOLO ESTÁ OCULTO
-        int idItem =
-                (int) modelo.getValueAt(
-                        fila,
-                        0
-                );
-
-        int pendiente =
-                (int) modelo.getValueAt(
-                        fila,
-                        4
-                );
+        int idItem = (int) modelo.getValueAt(fila, 0);
+        int pendiente = (int) modelo.getValueAt(fila, 4);
 
         try {
-
-            int cantidad =
-                    Integer.parseInt(
-                            txtCantidadRecibida
-                                    .getText()
-                                    .trim()
-                    );
-
-            String numeroFactura =
-                    txtNumeroFactura
-                            .getText()
-                            .trim();
-
-            String numeroRemision =
-                    txtNumeroRemision
-                            .getText()
-                            .trim();
-
-            // =========================
-            // VALIDACIONES
-            // =========================
+            int cantidad = Integer.parseInt(txtCantidadRecibida.getText().trim());
+            String numeroFactura = txtNumeroFactura.getText().trim();
+            String numeroRemision = txtNumeroRemision.getText().trim();
 
             if (cantidad <= 0) {
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Cantidad inválida."
-                );
-
+                JOptionPane.showMessageDialog(this, "La cantidad debe ser mayor a cero.", "Validación", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
             if (cantidad > pendiente) {
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "No puede exceder lo pendiente."
-                );
-
+                JOptionPane.showMessageDialog(this, "La cantidad ingresada supera las unidades pendientes.", "Validación", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            if (
-                    numeroFactura.isEmpty()
-                            && numeroRemision.isEmpty()
-            ) {
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Debe ingresar factura, remisión o ambas."
-                );
-
+            if (numeroFactura.isEmpty() && numeroRemision.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Debe registrar al menos un documento de soporte (Factura o Remisión).", "Validación", JOptionPane.WARNING_MESSAGE);
                 return;
             }
 
-            // =========================
-            // REGISTRAR
-            // =========================
-
-            String resultado =
-                    controller.registrarEntrada(
-                            orden.getId(),
-                            idItem,
-                            cantidad,
-                            numeroFactura,
-                            numeroRemision
-                    );
+            String resultado = controller.registrarEntrada(orden.getId(), idItem, cantidad, numeroFactura, numeroRemision);
 
             if ("OK".equals(resultado)) {
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        "Entrada registrada correctamente."
-                );
-
+                JOptionPane.showMessageDialog(this, "Entrada registrada correctamente.");
                 limpiarCampos();
-
                 cargarDetalleOrden();
-
+                cargarOrdenes(); // Recarga la lista por si la orden completó todos sus items y ya no está pendiente
             } else {
-
-                JOptionPane.showMessageDialog(
-                        this,
-                        resultado,
-                        "Error",
-                        JOptionPane.ERROR_MESSAGE
-                );
+                JOptionPane.showMessageDialog(this, resultado, "Error de Registro", JOptionPane.ERROR_MESSAGE);
             }
 
         } catch (NumberFormatException e) {
-
-            JOptionPane.showMessageDialog(
-                    this,
-                    "Cantidad inválida."
-            );
+            JOptionPane.showMessageDialog(this, "Ingrese un número entero válido en el campo de cantidad.", "Validación", JOptionPane.WARNING_MESSAGE);
         }
     }
 
-    // =========================
-    // LIMPIAR
-    // =========================
     private void limpiarCampos() {
-
         txtCantidadRecibida.setText("");
-
         txtNumeroFactura.setText("");
-
         txtNumeroRemision.setText("");
     }
 }

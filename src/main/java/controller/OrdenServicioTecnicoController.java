@@ -1,134 +1,77 @@
 package controller;
 
 import model.OrdenServicioTecnico;
-import repository.OrdenServicioTecnicoRepository;
-import repository.OrdenServicioRepository; // 🔄 Necesario para actualizar el estado macro de la orden
+import service.OrdenServicioTecnicoService;
 
 import java.util.List;
 
 /**
- * Controller para la gestión de técnicos
- * asignados a órdenes de servicio.
- *
- * ERP F&B
+ * Controlador encargado de mediar entre la interfaz de usuario y la capa de servicios
+ * para la gestión de asignaciones de técnicos a órdenes de servicio.
  */
 public class OrdenServicioTecnicoController {
 
-    private final OrdenServicioTecnicoRepository repository;
-    private final OrdenServicioRepository ordenRepository; // 🛠️ Añadido para controlar el flujo de la Orden Maestra
+    private final OrdenServicioTecnicoService service;
 
     public OrdenServicioTecnicoController() {
-        this.repository = new OrdenServicioTecnicoRepository();
-        this.ordenRepository = new OrdenServicioRepository();
+        this.service = new OrdenServicioTecnicoService();
     }
 
-    // =========================
-    // 🛠️ SOLUCIÓN AL ROJO 1: ASIGNAR TÉCNICO
-    // =========================
+    /**
+     * Solicita la asignación de un técnico a una orden de servicio.
+     *
+     * @param asignacion Datos de la asignación.
+     * @return Cadena de resultado "OK" o el mensaje de error correspondiente.
+     */
     public String asignarTecnico(OrdenServicioTecnico asignacion) {
         if (asignacion == null) return "Datos de asignación inválidos.";
-
-        boolean exito = repository.asignarTecnico(asignacion);
-        if (exito) {
-            // Si pasamos a "Asignado", actualizamos el estado de la cabecera general a "Asignada"
-            ordenRepository.actualizarEstado(asignacion.getIdOrdenServicio(), "Asignada");
-            return "OK";
-        }
-        return "No se pudo registrar la asignación del técnico en la Base de Datos.";
+        return service.asignarTecnico(asignacion);
     }
 
-    // =========================
-    // 🛠️ SOLUCIÓN AL ROJO 2: INICIAR SERVICIO
-    // =========================
+    /**
+     * Registra el inicio de las labores asignadas a un técnico.
+     *
+     * @param idAsignacion Identificador de la asignación.
+     * @return Mensaje de respuesta sobre el estado de la operación.
+     */
     public String iniciarServicio(int idAsignacion) {
-        OrdenServicioTecnico asignacion = repository.buscarPorId(idAsignacion);
-        if (asignacion == null) return "La asignación seleccionada no existe.";
-
-        // 1. Cambiamos el estado del técnico a "En ejecución"
-        boolean exitoTecnico = repository.actualizarEstado(idAsignacion, "En ejecución");
-
-        if (exitoTecnico) {
-            // 2. En cascada automática, la orden maestra pasa a "En ejecución"
-            ordenRepository.actualizarEstado(asignacion.getIdOrdenServicio(), "En ejecución");
-            return "Labor del técnico iniciada correctamente. Estado de la Orden: En ejecución.";
-        }
-        return "Error al intentar iniciar la labor del técnico.";
+        if (idAsignacion <= 0) return "Identificador de asignación inválido.";
+        return service.iniciarServicio(idAsignacion);
     }
 
-    // =========================
-    // 🛠️ SOLUCIÓN AL ROJO 3: FINALIZAR SERVICIO
-    // =========================
-    public String finalizarServicio(int idAsignacion, double horas) {
-        OrdenServicioTecnico asignacion = repository.buscarPorId(idAsignacion);
-        if (asignacion == null) return "La asignación seleccionada no existe.";
-
-        // 1. Registramos sus horas invertidas
-        boolean horasOk = repository.registrarHoras(idAsignacion, horas);
-        // 2. Pasamos su estado particular a "Finalizado"
-        boolean estadoOk = repository.actualizarEstado(idAsignacion, "Finalizado");
-
-        if (horasOk && estadoOk) {
-            // 3. Evaluamos si TODOS los técnicos asignados a esta misma orden ya terminaron
-            List<OrdenServicioTecnico> todas = repository.listarPorOrden(asignacion.getIdOrdenServicio());
-            boolean todasFinalizadas = true;
-
-            for (OrdenServicioTecnico ost : todas) {
-                if (!"Finalizado".equalsIgnoreCase(ost.getEstado())) {
-                    todasFinalizadas = false;
-                    break;
-                }
-            }
-
-            // 4. Si no quedan técnicos pendientes de terminar, cerramos la Orden Maestra por completo
-            if (todasFinalizadas) {
-                ordenRepository.actualizarEstado(asignacion.getIdOrdenServicio(), "Finalizada");
-                return "Labor finalizada. ¡Todos los técnicos han terminado! Orden de servicio cerrada como FINALIZADA.";
-            }
-
-            return "Labor de este técnico finalizada con éxito. La orden general sigue 'En ejecución' esperando a los demás técnicos.";
-        }
-        return "Error al registrar el cierre de labor del técnico.";
+    /**
+     * Registra la conclusión de las actividades del técnico y sus horas acumuladas.
+     *
+     * @param idAsignacion    Identificador de la asignación.
+     * @param horasTrabajadas Horas invertidas en el servicio.
+     * @return Mensaje de respuesta sobre el cierre de la asignación.
+     */
+    public String finalizarServicio(int idAsignacion, double horasTrabajadas) {
+        if (idAsignacion <= 0) return "Identificador de asignación inválido.";
+        if (horasTrabajadas < 0) return "La cantidad de horas no puede ser negativa.";
+        return service.finalizarServicio(idAsignacion, horasTrabajadas);
     }
 
-    // =========================
-    // LISTAR POR ORDEN
-    // =========================
+    /**
+     * Remueve la asignación de un técnico de una orden de servicio específica.
+     *
+     * @param idOrdenServicio Identificador de la orden maestra.
+     * @param idTecnico       Identificador del técnico a remover.
+     * @return Cadena de resultado "OK" o el mensaje de error de la capa intermedia.
+     */
+    public String eliminarAsignacion(int idOrdenServicio, int idTecnico) {
+        if (idOrdenServicio <= 0 || idTecnico <= 0) {
+            return "Identificadores de orden o técnico inválidos.";
+        }
+        // Se delega a la capa de servicio (asegúrate de que tu service tenga una firma compatible)
+        return service.eliminarAsignacion(idOrdenServicio, idTecnico);
+    }
+
     public List<OrdenServicioTecnico> listarPorOrden(int idOrdenServicio) {
-        return repository.listarPorOrden(idOrdenServicio);
+        return service.listarPorOrden(idOrdenServicio);
     }
 
-    // =========================
-    // BUSCAR POR ID
-    // =========================
     public OrdenServicioTecnico buscarPorId(int idAsignacion) {
-        return repository.buscarPorId(idAsignacion);
-    }
-
-    // =========================
-    // ACTUALIZAR ESTADO (MÉTODO BASE)
-    // =========================
-    public boolean actualizarEstado(int idAsignacion, String estado) {
-        return repository.actualizarEstado(idAsignacion, estado);
-    }
-
-    // =========================
-    // REGISTRAR HORAS (MÉTODO BASE)
-    // =========================
-    public boolean registrarHoras(int idAsignacion, double horas) {
-        return repository.registrarHoras(idAsignacion, horas);
-    }
-
-    // =========================
-    // ACTUALIZAR OBSERVACIONES
-    // =========================
-    public boolean actualizarObservaciones(int idAsignacion, String observaciones) {
-        return repository.actualizarObservaciones(idAsignacion, observaciones);
-    }
-
-    // =========================
-    // ELIMINAR ASIGNACIÓN
-    // =========================
-    public boolean eliminarAsignacion(int idAsignacion) {
-        return repository.eliminarAsignacion(idAsignacion);
+        return service.buscarPorId(idAsignacion);
     }
 }

@@ -8,507 +8,209 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Repository de detalle de órdenes de servicio.
- *
- * 🔥 ERP F&B:
- * Soporta:
- * - Servicios
- * - Productos
- * - Órdenes híbridas
+ * Componente de persistencia encargado de gestionar el ciclo de vida de los ítems detallados
+ * (tanto servicios técnicos como productos físicos) vinculados a las órdenes de servicio.
  */
 public class DetalleOrdenServicioRepository {
 
-    // =========================
-    // 🔹 INSERTAR LISTA
-    // =========================
-    public boolean insertarLista(
-            List<DetalleOrdenServicio> lista,
-            Connection conn
-    ) throws SQLException {
-
+    /**
+     * Inserta una colección de detalles de forma atómica utilizando procesamiento por lotes (Batch).
+     *
+     * @param lista Colección de detalles a registrar.
+     * @param conn  Conexión transaccional activa provista por la capa de servicio.
+     * @return true si todo el lote se insertó correctamente, false en caso contrario.
+     * @throws SQLException Si ocurre un error de persistencia o se detecta una cantidad inválida.
+     */
+    public boolean insertarLista(List<DetalleOrdenServicio> lista, Connection conn) throws SQLException {
         if (lista == null || lista.isEmpty()) {
-
-            throw new SQLException(
-                    "La lista de detalles está vacía."
-            );
+            throw new SQLException("La lista de detalles no puede estar vacía o nula.");
         }
 
-        // 🔥 SQL CORREGIDO: Ajustado a las columnas reales de la tabla
-        String sql =
-                "INSERT INTO detalle_orden_servicio ("
-                        + "id_orden_servicio, "
-                        + "tipo_item, "
-                        + "id_servicio, "
-                        + "id_producto, "
-                        + "codigo_referencia, "
-                        + "cantidad, "
-                        + "precio_unitario, "
-                        + "observacion"
-                        + ") "
-                        + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO detalle_orden_servicio (id_orden_servicio, tipo_item, id_servicio, " +
+                "id_producto, codigo_referencia, cantidad, precio_unitario, observacion) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-        try (
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql)
-
-        ) {
-
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
             for (DetalleOrdenServicio d : lista) {
-
                 if (d.getCantidad() <= 0) {
-
-                    throw new SQLException(
-                            "Cantidad inválida en detalle."
-                    );
+                    throw new SQLException("Se detectó un detalle con una cantidad igual o inferior a cero.");
                 }
 
-                ps.setInt(
-                        1,
-                        d.getIdOrdenServicio()
-                );
+                ps.setInt(1, d.getIdOrdenServicio());
+                ps.setString(2, d.getTipoItem());
 
-                ps.setString(
-                        2,
-                        d.getTipoItem()
-                );
-
-                // =========================
-                // SERVICIO
-                // =========================
-                if ("SERVICIO".equals(d.getTipoItem())) {
-
-                    ps.setInt(
-                            3,
-                            d.getIdServicio()
-                    );
-
+                if ("SERVICIO".equalsIgnoreCase(d.getTipoItem())) {
+                    ps.setInt(3, d.getIdServicio());
+                    ps.setNull(4, Types.INTEGER);
+                } else if ("PRODUCTO".equalsIgnoreCase(d.getTipoItem())) {
+                    ps.setNull(3, Types.INTEGER);
+                    ps.setInt(4, d.getIdProducto());
                 } else {
-
-                    ps.setNull(
-                            3,
-                            Types.INTEGER
-                    );
+                    ps.setNull(3, Types.INTEGER);
+                    ps.setNull(4, Types.INTEGER);
                 }
 
-                // =========================
-                // PRODUCTO
-                // =========================
-                if ("PRODUCTO".equals(d.getTipoItem())) {
+                ps.setString(5, d.getCodigoReferencia());
+                ps.setInt(6, d.getCantidad());
+                ps.setDouble(7, d.getPrecioUnitario());
+                ps.setString(8, d.getObservacion());
 
-                    ps.setInt(
-                            4,
-                            d.getIdProducto()
-                    );
-
-                } else {
-
-                    ps.setNull(
-                            4,
-                            Types.INTEGER
-                    );
-                }
-
-                // =========================
-                // GENERALES
-                // =========================
-                ps.setString(
-                        5,
-                        d.getCodigoReferencia()
-                );
-
-                ps.setInt(
-                        6,
-                        d.getCantidad()
-                );
-
-                ps.setDouble(
-                        7,
-                        d.getPrecioUnitario()
-                );
-
-                ps.setString(
-                        8,
-                        d.getObservacion()
-                );
-
-                addBatchOpcional(ps);
+                ps.addBatch();
             }
 
-            ps.executeBatch();
-
+            int[] resultados = ps.executeBatch();
+            for (int resultado : resultados) {
+                if (resultado == Statement.EXECUTE_FAILED) {
+                    return false;
+                }
+            }
             return true;
         }
     }
 
-    // Auxiliar interno para encapsular la excepción del Batch
-    private void addBatchOpcional(PreparedStatement ps) throws SQLException {
-        ps.addBatch();
-    }
+    /**
+     * Recupera el detalle completo de ítems asociados a una orden de servicio.
+     *
+     * @param idOrdenServicio Identificador de la orden maestra.
+     * @return Lista de detalles mapeados.
+     */
+    public List<DetalleOrdenServicio> listarPorOrden(int idOrdenServicio) {
+        List<DetalleOrdenServicio> lista = new ArrayList<>();
+        String sql = "SELECT id_detalle, id_orden_servicio, tipo_item, id_servicio, id_producto, " +
+                "codigo_referencia, cantidad, precio_unitario, observacion " +
+                "FROM detalle_orden_servicio WHERE id_orden_servicio = ?";
 
-    // =========================
-    // 🔹 LISTAR POR ORDEN
-    // =========================
-    public List<DetalleOrdenServicio> listarPorOrden(
-            int idOrdenServicio
-    ) {
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-        List<DetalleOrdenServicio> lista =
-                new ArrayList<>();
+            ps.setInt(1, idOrdenServicio);
 
-        String sql =
-                "SELECT * "
-                        + "FROM detalle_orden_servicio "
-                        + "WHERE id_orden_servicio = ?";
-
-        try (
-
-                Connection conn =
-                        DatabaseConnection.getConnection();
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql)
-
-        ) {
-
-            ps.setInt(
-                    1,
-                    idOrdenServicio
-            );
-
-            try (
-
-                    ResultSet rs =
-                            ps.executeQuery()
-
-            ) {
-
+            try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-
-                    DetalleOrdenServicio d =
-                            mapearDetalle(rs);
-
-                    lista.add(d);
+                    lista.add(mapearDetalle(rs));
                 }
             }
-
         } catch (SQLException e) {
-
-            System.err.println(
-                    "❌ Error listando detalles OS: "
-                            + e.getMessage()
-            );
+            System.err.println("Error al listar detalles de la orden de servicio: " + e.getMessage());
         }
-
         return lista;
     }
 
-    // =========================
-    // 🔹 OBTENER ITEM
-    // =========================
-    public DetalleOrdenServicio obtenerPorOrdenYReferencia(
-            int idOrdenServicio,
-            String tipoItem,
-            int idReferencia
-    ) {
+    /**
+     * Busca un ítem específico dentro del detalle de una orden filtrando por su tipo e identificador de referencia.
+     */
+    public DetalleOrdenServicio obtenerPorOrdenYReferencia(int idOrdenServicio, String tipoItem, int idReferencia) {
+        String columnaId = "SERVICIO".equalsIgnoreCase(tipoItem) ? "id_servicio" : "id_producto";
+        String sql = "SELECT id_detalle, id_orden_servicio, tipo_item, id_servicio, id_producto, " +
+                "codigo_referencia, cantidad, precio_unitario, observacion " +
+                "FROM detalle_orden_servicio WHERE id_orden_servicio = ? AND tipo_item = ? AND " + columnaId + " = ?";
 
-        // 🔥 CORREGIDO: Filtra dinámicamente por la columna correspondiente al tipo
-        String columnaId = "SERVICIO".equals(tipoItem) ? "id_servicio" : "id_producto";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-        String sql =
-                "SELECT * "
-                        + "FROM detalle_orden_servicio "
-                        + "WHERE id_orden_servicio = ? "
-                        + "AND tipo_item = ? "
-                        + "AND " + columnaId + " = ?";
+            ps.setInt(1, idOrdenServicio);
+            ps.setString(2, tipoItem);
+            ps.setInt(3, idReferencia);
 
-        try (
-
-                Connection conn =
-                        DatabaseConnection.getConnection();
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql)
-
-        ) {
-
-            ps.setInt(
-                    1,
-                    idOrdenServicio
-            );
-
-            ps.setString(
-                    2,
-                    tipoItem
-            );
-
-            ps.setInt(
-                    3,
-                    idReferencia
-            );
-
-            try (
-
-                    ResultSet rs =
-                            ps.executeQuery()
-
-            ) {
-
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-
                     return mapearDetalle(rs);
                 }
             }
-
         } catch (SQLException e) {
-
-            System.err.println(
-                    "❌ Error consultando detalle OS: "
-                            + e.getMessage()
-            );
+            System.err.println("Error al consultar ítem específico del detalle: " + e.getMessage());
         }
-
         return null;
     }
 
-    // =========================
-    // 🔥 ACTUALIZAR CANTIDAD
-    // =========================
-    public boolean actualizarCantidad(
-            Connection conn,
-            int idOrdenServicio,
-            String tipoItem,
-            int idReferencia,
-            int nuevaCantidad
-    ) throws SQLException {
-
+    /**
+     * Actualiza la cantidad de un ítem del detalle compartiendo el contexto transaccional.
+     */
+    public boolean actualizarCantidad(Connection conn, int idOrdenServicio, String tipoItem, int idReferencia, int nuevaCantidad) throws SQLException {
         if (nuevaCantidad <= 0) {
-
-            throw new SQLException(
-                    "La cantidad debe ser mayor a 0."
-            );
+            throw new SQLException("La cantidad a actualizar debe ser estrictamente mayor a cero.");
         }
 
-        // 🔥 CORREGIDO: Apunta a la columna correcta del tipo de ítem
-        String columnaId = "SERVICIO".equals(tipoItem) ? "id_servicio" : "id_producto";
+        String columnaId = "SERVICIO".equalsIgnoreCase(tipoItem) ? "id_servicio" : "id_producto";
+        String sql = "UPDATE detalle_orden_servicio SET cantidad = ? WHERE id_orden_servicio = ? AND tipo_item = ? AND " + columnaId + " = ?";
 
-        String sql =
-                "UPDATE detalle_orden_servicio "
-                        + "SET cantidad = ? "
-                        + "WHERE id_orden_servicio = ? "
-                        + "AND tipo_item = ? "
-                        + "AND " + columnaId + " = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, nuevaCantidad);
+            ps.setInt(2, idOrdenServicio);
+            ps.setString(3, tipoItem);
+            ps.setInt(4, idReferencia);
 
-        try (
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql)
-
-        ) {
-
-            ps.setInt(
-                    1,
-                    nuevaCantidad
-            );
-
-            ps.setInt(
-                    2,
-                    idOrdenServicio
-            );
-
-            ps.setString(
-                    3,
-                    tipoItem
-            );
-
-            ps.setInt(
-                    4,
-                    idReferencia
-            );
-
-            int filas =
-                    ps.executeUpdate();
-
-            if (filas == 0) {
-
-                throw new SQLException(
-                        "No se pudo actualizar el detalle."
-                );
+            if (ps.executeUpdate() == 0) {
+                throw new SQLException("No se modificó ninguna fila; la referencia especificada no existe.");
             }
-
-            System.out.println(
-                    "✏️ Cantidad actualizada."
-            );
-
             return true;
         }
     }
 
-    // =========================
-    // 🔥 ELIMINAR ITEM
-    // =========================
-    public boolean eliminarItem(
-            Connection conn,
-            int idOrdenServicio,
-            String tipoItem,
-            int idReferencia
-    ) throws SQLException {
+    /**
+     * Remueve un ítem del detalle de la orden de servicio dentro de un bloque transaccional.
+     */
+    public boolean eliminarItem(Connection conn, int idOrdenServicio, String tipoItem, int idReferencia) throws SQLException {
+        String columnaId = "SERVICIO".equalsIgnoreCase(tipoItem) ? "id_servicio" : "id_producto";
+        String sql = "DELETE FROM detalle_orden_servicio WHERE id_orden_servicio = ? AND tipo_item = ? AND " + columnaId + " = ?";
 
-        // 🔥 CORREGIDO: Apunta a la columna correcta del tipo de ítem
-        String columnaId = "SERVICIO".equals(tipoItem) ? "id_servicio" : "id_producto";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idOrdenServicio);
+            ps.setString(2, tipoItem);
+            ps.setInt(3, idReferencia);
 
-        String sql =
-                "DELETE FROM detalle_orden_servicio "
-                        + "WHERE id_orden_servicio = ? "
-                        + "AND tipo_item = ? "
-                        + "AND " + columnaId + " = ?";
-
-        try (
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql)
-
-        ) {
-
-            ps.setInt(
-                    1,
-                    idOrdenServicio
-            );
-
-            ps.setString(
-                    2,
-                    tipoItem
-            );
-
-            ps.setInt(
-                    3,
-                    idReferencia
-            );
-
-            int filas =
-                    ps.executeUpdate();
-
-            if (filas == 0) {
-
-                throw new SQLException(
-                        "No se pudo eliminar el item."
-                );
+            if (ps.executeUpdate() == 0) {
+                throw new SQLException("No se pudo eliminar el ítem; registro no localizado.");
             }
-
-            System.out.println(
-                    "🗑️ Item eliminado correctamente."
-            );
-
             return true;
         }
     }
 
-    // =========================
-    // 🔥 TOTAL ITEMS
-    // =========================
-    public int obtenerTotalItems(
-            int idOrdenServicio
-    ) {
+    /**
+     * Calcula de forma agregada la sumatoria total de unidades de ítems registradas en la orden.
+     */
+    public int obtenerTotalItems(int idOrdenServicio) {
+        String sql = "SELECT COALESCE(SUM(cantidad), 0) AS total FROM detalle_orden_servicio WHERE id_orden_servicio = ?";
 
-        String sql =
-                "SELECT "
-                        + "COALESCE(SUM(cantidad), 0) AS total "
-                        + "FROM detalle_orden_servicio "
-                        + "WHERE id_orden_servicio = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
 
-        try (
+            ps.setInt(1, idOrdenServicio);
 
-                Connection conn =
-                        DatabaseConnection.getConnection();
-
-                PreparedStatement ps =
-                        conn.prepareStatement(sql)
-
-        ) {
-
-            ps.setInt(
-                    1,
-                    idOrdenServicio
-            );
-
-            try (
-
-                    ResultSet rs =
-                            ps.executeQuery()
-
-            ) {
-
+            try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-
                     return rs.getInt("total");
                 }
             }
-
         } catch (SQLException e) {
-
-            System.err.println(
-                    "❌ Error calculando total items: "
-                            + e.getMessage()
-            );
+            System.err.println("Error al calcular el consolidado total de ítems: " + e.getMessage());
         }
-
         return 0;
     }
 
-    // =========================
-    // 🔥 MAPPER
-    // =========================
-    private DetalleOrdenServicio mapearDetalle(
-            ResultSet rs
-    ) throws SQLException {
+    /**
+     * Procesa la conversión de una fila del ResultSet hacia la entidad de control DetalleOrdenServicio.
+     */
+    private DetalleOrdenServicio mapearDetalle(ResultSet rs) throws SQLException {
+        DetalleOrdenServicio d = new DetalleOrdenServicio();
+        d.setIdDetalle(rs.getInt("id_detalle"));
+        d.setIdOrdenServicio(rs.getInt("id_orden_servicio"));
+        d.setTipoItem(rs.getString("tipo_item"));
 
-        DetalleOrdenServicio d =
-                new DetalleOrdenServicio();
-
-        d.setIdDetalle(
-                rs.getInt("id_detalle")
-        );
-
-        d.setIdOrdenServicio(
-                rs.getInt("id_orden_servicio")
-        );
-
-        d.setTipoItem(
-                rs.getString("tipo_item")
-        );
-
-        int idServicio =
-                rs.getInt("id_servicio");
-
+        int idServicio = rs.getInt("id_servicio");
         if (!rs.wasNull()) {
-
             d.setIdServicio(idServicio);
         }
 
-        int idProducto =
-                rs.getInt("id_producto");
-
+        int idProducto = rs.getInt("id_producto");
         if (!rs.wasNull()) {
-
             d.setIdProducto(idProducto);
         }
 
-        d.setCodigoReferencia(
-                rs.getString("codigo_referencia")
-        );
-
-        d.setCantidad(
-                rs.getInt("cantidad")
-        );
-
-        d.setPrecioUnitario(
-                rs.getDouble("precio_unitario")
-        );
-
-        d.setObservacion(
-                rs.getString("observacion")
-        );
-
+        d.setCodigoReferencia(rs.getString("codigo_referencia"));
+        d.setCantidad(rs.getInt("cantidad"));
+        d.setPrecioUnitario(rs.getDouble("precio_unitario"));
+        d.setObservacion(rs.getString("observacion"));
         return d;
     }
 }
