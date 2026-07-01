@@ -24,16 +24,11 @@ import java.util.List;
 public class ProductoService {
 
     private ProductoRepository productoRepo;
-
     private CategoriaRepository categoriaRepo;
 
     public ProductoService() {
-
-        this.productoRepo =
-                new ProductoRepository();
-
-        this.categoriaRepo =
-                new CategoriaRepository();
+        this.productoRepo = new ProductoRepository();
+        this.categoriaRepo = new CategoriaRepository();
     }
 
     // =========================
@@ -45,199 +40,115 @@ public class ProductoService {
             String idCatStr,
             String stockMinStr
     ) {
-
         try {
-
             validarNombre(nombre);
 
-            int stock =
-                    ParseUtil.toPositiveInt(
-                            stockStr,
-                            "Stock"
-                    );
+            int stock = ParseUtil.toPositiveInt(stockStr, "Stock");
+            int idCategoria = ParseUtil.toInt(idCatStr, "Categoría");
+            int stockMinimo = ParseUtil.toPositiveInt(stockMinStr, "Stock mínimo");
 
-            int idCategoria =
-                    ParseUtil.toInt(
-                            idCatStr,
-                            "Categoría"
-                    );
-
-            int stockMinimo =
-                    ParseUtil.toPositiveInt(
-                            stockMinStr,
-                            "Stock mínimo"
-                    );
-
-            validarCantidades(
-                    stock,
-                    stockMinimo
-            );
+            validarCantidades(stock, stockMinimo);
 
             // =========================
             // 🔥 OBTENER CATEGORÍA
             // =========================
-            Categoria categoria =
-                    categoriaRepo.buscarPorId(
-                            idCategoria
-                    );
-
+            Categoria categoria = categoriaRepo.buscarPorId(idCategoria);
             if (categoria == null) {
-
-                throw new BusinessException(
-                        "La categoría no existe."
-                );
+                throw new BusinessException("La categoría no existe.");
             }
 
             // =========================
             // 🔥 OBTENER ÚLTIMO CÓDIGO
             // =========================
-            String ultimoCodigo =
-                    productoRepo.obtenerUltimoCodigoPorCategoria(
-                            idCategoria
-                    );
+            String ultimoCodigo = productoRepo.obtenerUltimoCodigoPorCategoria(idCategoria);
 
             // =========================
-            // 🔥 GENERAR SKU
-            // EJ:
-            // PROD-DVR-0001
+            // 🔥 GENERAR SKU (EJ: PROD-DVR-0001)
             // =========================
-            String codigo =
-                    CodigoGenerator.generarCodigoProducto(
-                            categoria.getPrefijo(),
-                            ultimoCodigo
-                    );
+            String codigo = CodigoGenerator.generarCodigoProducto(
+                    categoria.getPrefijo(),
+                    ultimoCodigo
+            );
 
-            Producto producto =
-                    construirProducto(
-                            nombre,
-                            stock,
-                            idCategoria,
-                            stockMinimo,
-                            codigo
-                    );
+            Producto producto = construirProducto(
+                    nombre,
+                    stock,
+                    idCategoria,
+                    stockMinimo,
+                    codigo
+            );
 
-            boolean guardado =
-                    productoRepo.guardar(producto);
-
+            boolean guardado = productoRepo.guardar(producto);
             if (!guardado) {
-
-                throw new BusinessException(
-                        "No se pudo guardar el producto."
-                );
+                throw new BusinessException("No se pudo guardar el producto.");
             }
 
             return "OK";
 
         } catch (BusinessException e) {
-
             return e.getMessage();
-
         } catch (Exception e) {
-
             e.printStackTrace();
-
             return "Error interno del sistema.";
         }
     }
 
     // =========================
-// 🔹 EDITAR PRODUCTO
-// =========================
+    // 🔹 EDITAR PRODUCTO
+    // =========================
     public String editarProducto(
             int id,
             String nombre,
             String idCatStr,
             String stockMinStr
     ) {
-
         try {
-
             validarNombre(nombre);
 
             if (id <= 0) {
-
-                throw new BusinessException(
-                        "ID inválido."
-                );
+                throw new BusinessException("ID inválido.");
             }
 
-            int idCategoria =
-                    ParseUtil.toInt(
-                            idCatStr,
-                            "Categoría"
-                    );
-
-            int stockMinimo =
-                    ParseUtil.toPositiveInt(
-                            stockMinStr,
-                            "Stock mínimo"
-                    );
+            int idCategoria = ParseUtil.toInt(idCatStr, "Categoría");
+            int stockMinimo = ParseUtil.toPositiveInt(stockMinStr, "Stock mínimo");
 
             // =========================
             // 🔥 OBTENER CATEGORÍA
             // =========================
-            Categoria categoria =
-                    categoriaRepo.buscarPorId(
-                            idCategoria
-                    );
-
+            Categoria categoria = categoriaRepo.buscarPorId(idCategoria);
             if (categoria == null) {
-
-                throw new BusinessException(
-                        "La categoría no existe."
-                );
+                throw new BusinessException("La categoría no existe.");
             }
 
             // =========================
             // 🔥 GENERAR NUEVO SKU
             // =========================
-            String ultimoCodigo =
-                    productoRepo.obtenerUltimoCodigoPorCategoria(
-                            idCategoria
-                    );
-
-            String codigo =
-                    CodigoGenerator.generarCodigoProducto(
-                            categoria.getPrefijo(),
-                            ultimoCodigo
-                    );
+            String ultimoCodigo = productoRepo.obtenerUltimoCodigoPorCategoria(idCategoria);
+            String codigo = CodigoGenerator.generarCodigoProducto(
+                    categoria.getPrefijo(),
+                    ultimoCodigo
+            );
 
             // =========================
             // 🔥 ARMAR PRODUCTO
             // =========================
-            Producto p =
-                    new Producto();
-
+            Producto p = new Producto();
             p.setId(id);
-
-            p.setCodigoReferencia(
-                    codigo
-            );
-
+            p.setCodigoReferencia(codigo);
             p.setNombre(nombre);
-
             p.setIdCategoria(idCategoria);
-
             p.setStockMinimo(stockMinimo);
 
             // =========================
             // 🔥 ACTUALIZAR
             // =========================
-            boolean actualizado =
-                    productoRepo.actualizar(p);
-
-            return actualizado
-                    ? "OK"
-                    : "Error al actualizar el producto.";
+            boolean actualizado = productoRepo.actualizar(p);
+            return actualizado ? "OK" : "Error al actualizar el producto.";
 
         } catch (BusinessException e) {
-
             return e.getMessage();
-
         } catch (Exception e) {
-
             e.printStackTrace();
-
             return "Error interno del sistema.";
         }
     }
@@ -246,14 +157,9 @@ public class ProductoService {
     // 🔹 INACTIVAR PRODUCTO
     // =========================
     public boolean eliminarProducto(int id) {
-
         if (id <= 0) {
-
-            throw new BusinessException(
-                    "ID inválido."
-            );
+            throw new BusinessException("ID inválido.");
         }
-
         return productoRepo.eliminar(id);
     }
 
@@ -261,14 +167,9 @@ public class ProductoService {
     // 🔹 REACTIVAR PRODUCTO
     // =========================
     public boolean reactivarProducto(int id) {
-
         if (id <= 0) {
-
-            throw new BusinessException(
-                    "ID inválido."
-            );
+            throw new BusinessException("ID inválido.");
         }
-
         return productoRepo.reactivarProducto(id);
     }
 
@@ -276,7 +177,6 @@ public class ProductoService {
     // 🔹 LISTAR ACTIVOS
     // =========================
     public List<Producto> listarProductos() {
-
         return productoRepo.listarTodos();
     }
 
@@ -284,7 +184,6 @@ public class ProductoService {
     // 🔹 LISTAR INACTIVOS
     // =========================
     public List<Producto> listarProductosInactivos() {
-
         return productoRepo.listarInactivos();
     }
 
@@ -292,43 +191,58 @@ public class ProductoService {
     // 🔹 LISTAR CATEGORÍAS
     // =========================
     public List<Categoria> listarCategorias() {
-
         return categoriaRepo.listarCategorias();
     }
 
     // =========================
-    // 🔥 INVENTARIO
+    // 🔥 INVENTARIO - REBAJAR STOCK (NUEVO)
     // =========================
-    public void aumentarStock(
-            int idProducto,
-            int cantidad
-    ) {
-
+    /**
+     * Reduce las existencias de un producto validando que haya stock suficiente.
+     * Almacena la consistencia de las reglas del negocio del ERP.
+     *
+     * @param idProducto Identificador del material.
+     * @param cantidad   Unidades físicas realmente consumidas.
+     * @return true si la actualización en persistencia fue exitosa.
+     */
+    public boolean descontarStock(int idProducto, int cantidad) {
         if (idProducto <= 0) {
-
-            throw new BusinessException(
-                    "Producto inválido."
-            );
+            throw new BusinessException("Producto inválido.");
         }
-
         if (cantidad <= 0) {
-
-            throw new BusinessException(
-                    "Cantidad inválida."
-            );
+            throw new BusinessException("La cantidad a descontar debe ser mayor a cero.");
         }
 
-        boolean ok =
-                productoRepo.aumentarStock(
-                        idProducto,
-                        cantidad
-                );
+        // Recuperamos el estado del producto para validar sus existencias reales
+        Producto prod = productoRepo.buscarPorId(idProducto);
+        if (prod == null) {
+            throw new BusinessException("El producto seleccionado no existe en el catálogo.");
+        }
 
+        // Regla de Negocio: Evitar quiebres de inventario o saldos en rojo inesperados
+        if (prod.getStockActual() < cantidad) {
+            throw new BusinessException("Stock insuficiente para '" + prod.getNombre() +
+                    "'. Disponible: " + prod.getStockActual() + ", Requerido: " + cantidad);
+        }
+
+        // Ejecuta el descuento físico directo en base de datos
+        return productoRepo.actualizarStockFisico(idProducto, cantidad);
+    }
+
+    // =========================
+    // 🔥 INVENTARIO - AUMENTAR STOCK
+    // =========================
+    public void aumentarStock(int idProducto, int cantidad) {
+        if (idProducto <= 0) {
+            throw new BusinessException("Producto inválido.");
+        }
+        if (cantidad <= 0) {
+            throw new BusinessException("Cantidad inválida.");
+        }
+
+        boolean ok = productoRepo.aumentarStock(idProducto, cantidad);
         if (!ok) {
-
-            throw new BusinessException(
-                    "No se pudo actualizar el stock."
-            );
+            throw new BusinessException("No se pudo actualizar el stock.");
         }
     }
 
@@ -336,48 +250,27 @@ public class ProductoService {
     // 🔹 VALIDAR NOMBRE
     // =========================
     private void validarNombre(String nombre) {
-
-        if (
-                nombre == null
-                        || nombre.trim().isEmpty()
-        ) {
-
-            throw new BusinessException(
-                    "El nombre es obligatorio."
-            );
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new BusinessException("El nombre es obligatorio.");
         }
     }
 
     // =========================
     // 🔹 VALIDAR STOCKS
     // =========================
-    private void validarCantidades(
-            int stock,
-            int stockMinimo
-    ) {
-
+    private void validarCantidades(int stock, int stockMinimo) {
         if (stock < 0) {
-
-            throw new BusinessException(
-                    "El stock no puede ser negativo."
-            );
+            throw new BusinessException("El stock no puede ser negativo.");
         }
-
         if (stockMinimo < 0) {
-
-            throw new BusinessException(
-                    "El stock mínimo no puede ser negativo."
-            );
+            throw new BusinessException("El stock mínimo no puede ser negativo.");
         }
     }
 
     // =========================
     // 🔹 BUSCAR PRODUCTO POR ID
     // =========================
-    public Producto buscarProductoPorId(
-            int id
-    ) {
-
+    public Producto buscarProductoPorId(int id) {
         return productoRepo.buscarPorId(id);
     }
 
@@ -391,26 +284,14 @@ public class ProductoService {
             int stockMinimo,
             String codigo
     ) {
-
-        Producto p =
-                new Producto();
-
+        Producto p = new Producto();
         p.setCodigoReferencia(codigo);
-
         p.setNombre(nombre);
-
         p.setStockActual(stock);
-
         p.setIdCategoria(idCategoria);
-
         p.setStockMinimo(stockMinimo);
-
         p.setEstado("ACTIVO");
-
-        p.setDescripcion(
-                "Referencia General"
-        );
-
+        p.setDescripcion("Referencia General");
         return p;
     }
 }

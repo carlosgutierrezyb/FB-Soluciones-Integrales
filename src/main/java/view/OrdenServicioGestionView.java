@@ -15,6 +15,7 @@ import java.awt.*;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class OrdenServicioGestionView extends JFrame {
 
@@ -240,7 +241,10 @@ public class OrdenServicioGestionView extends JFrame {
         btnAsignarTecnico.addActionListener(e -> asignarTecnico());
         btnEliminarTecnico.addActionListener(e -> eliminarTecnicoFlujo());
         btnIniciarServicio.addActionListener(e -> actualizarEstadoOrden("En ejecución"));
-        btnFinalizarServicio.addActionListener(e -> actualizarEstadoOrden("Finalizada"));
+
+        // 🔥 INTEGRACIÓN DE LA NUEVA VENTANA DE CONFIRMACIÓN DE INVENTARIO
+        btnFinalizarServicio.addActionListener(e -> abrirFlujoCierreConInventario());
+
         btnFacturar.addActionListener(e -> actualizarEstadoOrden("Facturada"));
 
         // Eventos funcionales para gestión de materiales e insumos
@@ -379,7 +383,7 @@ public class OrdenServicioGestionView extends JFrame {
                 }
 
             } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "La cantidad debe ser un value entero numérico válido.", "Formato Inválido", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "La cantidad debe ser un valor entero numérico válido.", "Formato Inválido", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -469,8 +473,39 @@ public class OrdenServicioGestionView extends JFrame {
     }
 
     //--------------------------------------------------------------
-    // OPERACIONES DE FLUJO ADICIONALES
+    // OPERACIONES DE FLUJO ADICIONALES Y CIERRE CON INVENTARIO
     //--------------------------------------------------------------
+    /**
+     * 🔥 NUEVO: Orquesta la confirmación física y descuento masivo de insumos
+     * antes de permitir que la orden pase formalmente a estado 'Finalizada'.
+     */
+    private void abrirFlujoCierreConInventario() {
+        // 1. Extraer los materiales adjuntos en base de datos para esta orden
+        List<DetalleOrdenServicio> materialesVigentes = ordenController.obtenerDetalleOrden(orden.getIdOrdenServicio());
+
+        // 2. Filtrar únicamente elementos que correspondan a la categoría PRODUCTO (material físico)
+        List<DetalleOrdenServicio> productosFisicos = materialesVigentes.stream()
+                .filter(d -> "PRODUCTO".equalsIgnoreCase(d.getTipoItem()))
+                .collect(Collectors.toList());
+
+        // 3. Si la orden contiene materiales asignados, levantar el diálogo interactivo de auditoría
+        if (!productosFisicos.isEmpty()) {
+            ConfirmarMaterialesView ventanaConfirmar = new ConfirmarMaterialesView(this, productosFisicos, inventarioController);
+            ventanaConfirmar.setVisible(true);
+
+            // Si el usuario cerró la ventana, presionó cancelar o falló la verificación de stock mínimo, se detiene el flujo
+            if (!ventanaConfirmar.isOperacionConfirmada()) {
+                JOptionPane.showMessageDialog(this,
+                        "Proceso interrumpido. Debe confirmar los materiales para poder finalizar el servicio.",
+                        "Cierre de Servicio Cancelado", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+        }
+
+        // 4. Si pasó la validación (o si la orden no requería insumos físicos), cerramos la orden maestra
+        actualizarEstadoOrden("Finalizada");
+    }
+
     private void cargarTecnicosAsignados() {
         modeloTecnicos.setRowCount(0);
         ordenTecnicoController.listarPorOrden(orden.getIdOrdenServicio())
@@ -517,7 +552,6 @@ public class OrdenServicioGestionView extends JFrame {
             return;
         }
 
-        // Recuperamos la lista de técnicos asignados actualmente a esta orden para mapear la fila seleccionada
         List<model.OrdenServicioTecnico> asignados = ordenTecnicoController.listarPorOrden(orden.getIdOrdenServicio());
         if (filaSeleccionada < asignados.size()) {
             model.OrdenServicioTecnico relacion = asignados.get(filaSeleccionada);
@@ -527,12 +561,11 @@ public class OrdenServicioGestionView extends JFrame {
                     "Confirmar Desasignación", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
             if (confirmacion == JOptionPane.YES_OPTION) {
-                // Invoca la eliminación en la tabla intermedia mediante los dos identificadores
                 String resultado = ordenTecnicoController.eliminarAsignacion(orden.getIdOrdenServicio(), relacion.getIdTecnico());
 
                 if ("OK".equals(resultado) || resultado.toLowerCase().contains("éxito")) {
                     JOptionPane.showMessageDialog(this, "Técnico desasignado correctamente.");
-                    refrescar(); // Vuelve a cargar las tablas y combos actualizados
+                    refrescar();
                 } else {
                     JOptionPane.showMessageDialog(this, resultado, "Error", JOptionPane.ERROR_MESSAGE);
                 }

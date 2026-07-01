@@ -157,4 +157,20 @@ public class InventarioController {
 
         return productoService.buscarProductoPorId(id);
     }
+
+    // =========================
+    // 🔹 DESCONTAR STOCK TRANSACCIONAL
+    // =========================
+    public String descontarStock(int idProducto, int cantidad) {
+        if (idProducto <= 0) return "ID de producto inválido.";
+        if (cantidad <= 0) return "La cantidad a descontar debe ser mayor a cero.";
+
+        try {
+            boolean exito = productoService.descontarStock(idProducto, cantidad);
+            return exito ? "OK" : "No se pudo actualizar el stock en el inventario.";
+        } catch (Exception e) {
+            return "Error en el módulo de inventario: " + e.getMessage();
+        }
+    }
+
 }
